@@ -10,7 +10,14 @@ Welcome!
    :maxdepth: 2
    :caption: Contents:
 
+Configuration
+-------------
 
+.. toctree::
+   :maxdepth: 5
+
+   networking
+   github
 
 API Reference
 -------------
