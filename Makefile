@@ -4,12 +4,12 @@ PYTHON := poetry run python
 TOUCH := $(PYTHON) -c 'import sys; from pathlib import Path; Path(sys.argv[1]).touch()'
 
 poetry.lock: pyproject.toml
-	poetry lock
+	poetry check --lock
 
-# Build venv with both conda and python deps.
-$(VENV): environment.yml
-	@echo Installing Conda environment
-	@conda env update --prefix $@ --prune --file $^
+# Build venv with python deps.
+$(VENV):
+	@echo Building Python virtualenv
+	@$(PYTHON) -m venv $@
 	@echo Installing Poetry environment
 	@poetry install
 	@$(TOUCH) $@
