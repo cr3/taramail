@@ -1,5 +1,5 @@
 services:
-  domain-connect-dyndns:
+  dyndns:
     build: .
     volumes:
       - ./settings.txt:/settings.txt
