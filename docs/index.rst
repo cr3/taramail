@@ -16,6 +16,7 @@ Configuration
 .. toctree::
    :maxdepth: 5
 
+   hardware
    networking
    github
 

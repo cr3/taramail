@@ -1,5 +1,7 @@
-modules
-=======
+taram
+=====
 
-..
-    Generate this file with ``sphinx-apidoc --force --implicit-namespaces -o docs taram``
+.. toctree::
+   :maxdepth: 4
+
+   taram
