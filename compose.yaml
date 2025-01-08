@@ -1,5 +1,5 @@
 services:
   dyndns:
-    build: .
+    build: dyndns
     volumes:
-      - ./settings.txt:/settings.txt
+      - ./dyndns/settings.txt:/settings.txt

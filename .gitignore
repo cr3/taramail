@@ -1,5 +1,5 @@
 # Private files
-settings.txt
+dyndns/settings.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

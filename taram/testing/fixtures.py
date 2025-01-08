@@ -8,5 +8,5 @@ from pytest_xdocker.docker import docker
 def dyndns_image():
     """Tag for the dyndns image."""
     tag = "test-dyndns"
-    docker.build(".").with_tag(tag).execute()
+    docker.build("dyndns").with_tag(tag).execute()
     return tag
