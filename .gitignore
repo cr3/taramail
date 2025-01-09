@@ -1,6 +1,9 @@
 # Private files
 dyndns/settings.txt
 
+# pytest-xprocess cache
+.xprocess/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

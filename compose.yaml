@@ -3,3 +3,26 @@ services:
     build: dyndns
     volumes:
       - ./dyndns/settings.txt:/settings.txt
+
+  unbound:
+    build: unbound
+    volumes:
+      - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
+    restart: always
+    networks:
+      taram-network:
+        ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
+        aliases:
+          - unbound
+
+networks:
+  taram-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-taram
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${IPV4_NETWORK:-172.22.1}.0/24
+        - subnet: ${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}

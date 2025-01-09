@@ -54,6 +54,11 @@ deploy:
 	@docker compose up --force-recreate --build -d
 	@docker image prune -f
 
+.PHONY: undeploy
+undeploy:
+	@echo Undeploying
+	@docker compose down
+
 .PHONY: clean
 clean:
 	@echo Cleaning ignored files

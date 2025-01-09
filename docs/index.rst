@@ -19,6 +19,7 @@ Configuration
    hardware
    networking
    github
+   services
 
 API Reference
 -------------
