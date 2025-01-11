@@ -13,8 +13,8 @@ RUN apk add --update --no-cache \
 COPY healthcheck.sh /
 HEALTHCHECK --interval=30s --timeout=30s CMD [ "/healthcheck.sh" ]
 
-COPY docker-entrypoint.sh /
-ENTRYPOINT ["/docker-entrypoint.sh"]
+COPY entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 53/udp 53/tcp
 
