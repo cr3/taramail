@@ -11,7 +11,7 @@ $(VENV):
 	@echo Building Python virtualenv
 	@$(PYTHON) -m venv $@
 	@echo Installing Poetry environment
-	@poetry install
+	@poetry install --all-extras
 	@$(TOUCH) $@
 
 # Convenience target to build venv
@@ -20,8 +20,8 @@ setup: $(VENV)
 
 .PHONY: check
 check: $(VENV)
-	@echo Checking Poetry lock: Running poetry lock --check
-	@poetry lock --check
+	@echo Checking Poetry lock: Running poetry check --lock
+	@poetry check --lock
 	@echo Linting code: Running pre-commit
 	@poetry run pre-commit run -a
 
@@ -41,11 +41,6 @@ coverage: $(VENV)
 docs: $(VENV)
 	@echo Building docs: Running sphinx-build
 	@poetry run sphinx-build -W -d build/doctrees docs build/html
-
-.PHONY: build
-build:
-	@echo Creating wheel file
-	@poetry build
 
 .PHONY: deploy
 deploy:

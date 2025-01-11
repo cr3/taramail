@@ -40,6 +40,7 @@ jobs:
         uses: ./.github/actions/setup-poetry-env
         with:
           python-version: ${{ matrix.python-version }}
+          poetry-options: --all-extras
 
       - name: Run test target
         run: make test

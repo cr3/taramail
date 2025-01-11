@@ -10,16 +10,32 @@ services:
       - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
     restart: always
     networks:
-      taram-network:
+      mail-network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
         aliases:
           - unbound
 
+  dockerapi:
+    build:
+      context: .
+      dockerfile: dockerapi/Dockerfile
+    security_opt:
+      - label=disable
+    restart: always
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      mail-network:
+        aliases:
+          - dockerapi
+
 networks:
-  taram-network:
+  mail-network:
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.name: br-taram
+      com.docker.network.bridge.name: br-mail
     enable_ipv6: true
     ipam:
       driver: default

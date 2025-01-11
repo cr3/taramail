@@ -1,8 +1,9 @@
 Version 0.2.0
 -------------
 
-Released 2025-01-08
+Released 2025-01-11
 
+-   Add dockerapi service.
 -   Add dyndns service.
 -   Add unbound service.
 
