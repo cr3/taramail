@@ -1972,4 +1972,4 @@ dockerapi = ["aiodocker", "fastapi", "uvicorn"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "1857ca609f25f027b826b55efde33751b9bce4269ec25a713827042cb0695786"
+content-hash = "6281fbd803217f646e71cc13565808a1e498498f3419087506e57d0ca8016918"
