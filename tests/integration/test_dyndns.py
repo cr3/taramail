@@ -7,7 +7,7 @@ import requests
 from pytest_xdocker.docker import docker
 
 
-def test_dyndns(dyndns_image, tmp_path):
+def test_dyndns(tmp_path):
     """The dyndns service should do nothing when records are up to date."""
     response = requests.get("https://api.ipify.org", timeout=1)
     ip = response.text
@@ -27,19 +27,21 @@ def test_dyndns(dyndns_image, tmp_path):
         encoding="ascii",
     )
     output = (
-        docker.run(dyndns_image)
+        docker.compose()
+        .run("dyndns")
+        .with_build()
+        .with_remove()
         .with_volume(
             settings,
-            "/settings.txt",
+            "/test-settings.txt",
         )
         .with_command(
             "/usr/local/bin/domain-connect-dyndns",
             "update",
             "--all",
             "--config",
-            "/settings.txt",
+            "/test-settings.txt",
         )
-        .with_remove()
         .execute(capture_output=True, universal_newlines=True)
     )
     assert "All records up to date" in output.stdout
