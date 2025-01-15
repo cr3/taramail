@@ -33,6 +33,34 @@ services:
         aliases:
           - dockerapi
 
+  monit:
+    build: monit
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    depends_on:
+      - dockerapi
+    ports:
+      - 2812
+    networks:
+      mail-network:
+        aliases:
+          - monit
+
+  ipv6nat:
+    depends_on:
+      - unbound
+      - monit
+      - dockerapi
+    image: robbertkl/ipv6nat
+    security_opt:
+      - label=disable
+    restart: always
+    privileged: true
+    network_mode: "host"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /lib/modules:/lib/modules:ro
+
 networks:
   mail-network:
     driver: bridge

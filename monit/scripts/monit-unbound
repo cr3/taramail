@@ -1,0 +1,21 @@
+#!/usr/bin/bash
+
+err_count=0
+
+# Check IPv4
+/usr/lib/nagios/plugins/check_dns -s $(dig unbound +short A) -H github.com
+err_count=$(( ${err_count} + $? ))
+
+# Check IPv6
+/usr/lib/nagios/plugins/check_dns -s $(dig unbound +short AAAA) -H github.com
+err_count=$(( ${err_count} + $? ))
+
+DNSSEC=$(dig com +dnssec | egrep 'flags:.+ad')
+if [[ -z ${DNSSEC} ]]; then
+  echo "DNSSEC FAIL"
+  err_count=$(( ${err_count} + 1))
+else
+  echo "DNSSEC OK"
+fi
+
+exit $err_count
