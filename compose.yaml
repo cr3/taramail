@@ -24,6 +24,8 @@ services:
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
+    environment:
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:

@@ -9,7 +9,7 @@ def resolve(name, ip, port=53):
     nameserver = Do53Nameserver(ip, port)
     resolver = Resolver()
     resolver.nameservers = [nameserver]
-    return resolver.resolve_name(name)
+    return resolver.resolve_name(name, lifetime=60)
 
 
 def test_unbound_resolve(unbound_client):

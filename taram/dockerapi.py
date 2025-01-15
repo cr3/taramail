@@ -1,4 +1,5 @@
-from collections.abc import Mapping
+import json
+import os
 from contextlib import asynccontextmanager
 
 import aiodocker
@@ -8,64 +9,63 @@ from fastapi.responses import JSONResponse
 
 
 @define(frozen=True)
-class DockerapiContainer(Mapping):
+class DockerapiService:
 
-    info = field()
-    container = field()
-
-    def __getitem__(self, key):
-        return self.info[key]
-
-    def __iter__(self):
-        return iter(self.info)
-
-    def __len__(self):
-        return len(self.info)
+    name = field()
+    containers = field(factory=list)
 
     async def call(self, action: str) -> None:
-        func = getattr(self.container, action)
-        await func()
-
-    def matches(self, name) -> bool:
-        return (
-            name == self.get("Id")
-            or name.startswith("~")
-            and (
-                name[1:] == self.get("Name", "")[1:]
-                or name[1:] == self.get("Config", {}).get("Labels", {}).get("com.docker.compose.service")
-            )
-        )
+        for container in self.containers:
+            func = getattr(container, action)
+            await func()
 
 
 @define(frozen=True)
 class Dockerapi:
 
     docker = field()
+    project = field()
 
     @classmethod
-    def from_url(cls, url) -> "Dockerapi":
+    def from_url(cls, url: str, project: str) -> "Dockerapi":
         docker = aiodocker.Docker(url=url)
-        return cls(docker)
+        return cls(docker, project)
 
     async def close(self) -> None:
         await self.docker.close()
 
-    async def get_containers(self):
-        for container in await self.docker.containers.list():
+    async def get_services(self):
+        services = {}
+        filters = json.dumps({
+            "label": [
+                f"com.docker.compose.project={self.project}",
+            ],
+        })
+        for container in await self.docker.containers.list(all=True, filters=filters):
             info = await container.show()
-            yield DockerapiContainer(info, container)
+            name = info["Config"]["Labels"]["com.docker.compose.service"]
+            services.setdefault(name, DockerapiService(name))
+            services[name].containers.append(container)
 
-    async def get_container(self, name: str):
-        async for container in self.get_containers():
-            if container.matches(name):
-                return container
+        return services.values()
 
-        raise KeyError(f"Container not found: {name}")
+    async def get_service(self, name: str):
+        filters = json.dumps({
+            "label": [
+                f"com.docker.compose.project={self.project}",
+                f"com.docker.compose.service={name}",
+            ],
+        })
+        containers = await self.docker.containers.list(all=True, filters=filters)
+        return DockerapiService(name, containers)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.dockerapi = Dockerapi.from_url("unix:///var/run/docker.sock")
+    app.dockerapi = Dockerapi.from_url(
+        "unix:///var/run/docker.sock",
+        os.environ["COMPOSE_PROJECT_NAME"],
+    )
 
     yield
 
@@ -75,31 +75,40 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/containers")
-async def get_containers():
-    containers = {c["Id"]: c.info async for c in app.dockerapi.get_containers()}
-    return JSONResponse(containers)
+@app.get("/services")
+async def get_services():
+    services = [
+        {
+            "name": s.name,
+            "containers": [c.id for c in s.containers],
+        }
+        for s in await app.dockerapi.get_services()
+    ]
+    return JSONResponse(services)
 
 
-@app.get("/containers/{name}")
-async def get_container(name: str):
+@app.get("/services/{name}")
+async def get_service(name: str):
     try:
-        container = await app.dockerapi.get_container(name)
+        service = await app.dockerapi.get_service(name)
     except KeyError as e:
-        raise HTTPException(404, details="Container not found") from e
+        raise HTTPException(404, "Service not found") from e
 
-    return JSONResponse(container.info)
+    return JSONResponse({
+        "name": service.name,
+        "containers": [c.id for c in service.containers],
+    })
 
 
-@app.post("/containers/{name}/{action}")
-async def post_container_action(name: str, action: str):
+@app.post("/services/{name}/{action}")
+async def post_service_action(name: str, action: str):
     try:
-        container = await app.dockerapi.get_container(name)
+        service = await app.dockerapi.get_service(name)
     except KeyError as e:
-        raise HTTPException(404, details="Container not found") from e
+        raise HTTPException(404, "Service not found") from e
 
     try:
-        await container.call(action)
+        await service.call(action)
     except AttributeError as e:
         raise HTTPException(400, "Unsupported action") from e
 
