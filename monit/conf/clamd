@@ -1,0 +1,3 @@
+check program clamd with path "/opt/monit/scripts/monit-clamd"
+  restart program = "/usr/bin/curl --silent -X POST http://dockerapi/services/clamd/restart"
+  if status != 0 for 15 cycles then restart

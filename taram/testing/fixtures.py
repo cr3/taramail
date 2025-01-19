@@ -27,6 +27,14 @@ def dockerapi_app(project):
 
 
 @pytest.fixture(scope="session")
+def clamd_client(project, process):
+    """Clamd client fixture."""
+    server = ComposeServer("socket found, clamd started", project=project, process=process)
+    with server.run("clamd") as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
 def dockerapi_client(project, process):
     """Dockerapi client fixture."""
     server = ComposeServer("Uvicorn running on", project=project, process=process)

@@ -19,6 +19,22 @@ services:
         aliases:
           - redis
 
+  clamd:
+    image: clamav/clamav:1.4.1
+    restart: always
+    depends_on:
+      - unbound
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    volumes:
+      - ./clamd/clamd.conf:/etc/clamav/clamd.conf:ro,Z
+      - ./clamd/freshclam.conf:/etc/clamav/freshclam.conf:ro,Z
+      - clamd-vol-1:/var/lib/clamav
+    networks:
+      mail-network:
+        aliases:
+          - clamd
+
   netfilter:
     build:
       context: .
@@ -90,9 +106,10 @@ services:
   ipv6nat:
     image: robbertkl/ipv6nat
     depends_on:
-      - unbound
-      - monit
+      - clamd
       - dockerapi
+      - monit
+      - unbound
     security_opt:
       - label=disable
     restart: always
@@ -115,4 +132,5 @@ networks:
         - subnet: ${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
 
 volumes:
+  clamd-vol-1:
   redis-vol-1:
