@@ -81,17 +81,3 @@ jobs:
           name: html-report
           path: htmlcov
         if: ${{ failure() }}
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out
-        uses: actions/checkout@v3
-
-      - name: Set up the environment
-        uses: ./.github/actions/setup-poetry-env
-        with:
-          poetry-options: --with docs
-
-      - name: Run docs target
-        run: make docs
