@@ -20,16 +20,32 @@ RUN apt update \
   && curl -sSL https://install.python-poetry.org | python3 -
 
 WORKDIR /app
+
+ARG PYTHON_EXTRAS
+
 COPY poetry.lock pyproject.toml ./
-RUN poetry install --no-dev --extras dockerapi
+RUN poetry install --without=test --no-root --extras=$PYTHON_EXTRAS
+
+COPY . ./
+RUN poetry install --without=test --extras=$PYTHON_EXTRAS
 
 FROM base AS runtime
 
 ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
+
 COPY --from=build /app ./
-COPY ./taram ./taram
+
+FROM runtime AS dockerapi
 
 EXPOSE 80
 CMD ["uvicorn", "--host=0.0.0.0", "--port=80", "taram.dockerapi:app"]
+
+FROM runtime AS netfilter
+
+RUN apt update \
+  && apt install -y --no-install-recommends nftables \
+  && rm -rf /var/lib/apt/lists/*
+
+CMD ["netfilter"]

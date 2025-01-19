@@ -4,6 +4,45 @@ services:
     volumes:
       - ./dyndns/settings.txt:/settings.txt
 
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-vol-1:/data/
+    restart: always
+    ports:
+      - "${REDIS_PORT:-127.0.0.1:7654}:6379"
+    sysctls:
+      - net.core.somaxconn=4096
+    networks:
+      mail-network:
+        ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
+        aliases:
+          - redis
+
+  netfilter:
+    build:
+      context: .
+      args:
+        PYTHON_EXTRAS: netfilter
+      target: netfilter
+    depends_on:
+      - redis
+    stop_grace_period: 30s
+    restart: always
+    privileged: true
+    environment:
+      - NETFILTER_CHAIN_NAME=${NETFILTER_CHAIN_NAME:-MAIL}
+      - NETFILTER_CHAIN_COMMENT=${NETFILTER_CHAIN_COMMENT:-mail}
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
+      - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+      - SNAT_TO_SOURCE=${SNAT_TO_SOURCE:-}
+      - SNAT6_TO_SOURCE=${SNAT6_TO_SOURCE:-}
+      - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
+      - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
+    network_mode: "host"
+    volumes:
+      - /lib/modules:/lib/modules:ro
+
   unbound:
     build: unbound
     volumes:
@@ -18,14 +57,16 @@ services:
   dockerapi:
     build:
       context: .
-      dockerfile: dockerapi/Dockerfile
+      args:
+        PYTHON_EXTRAS: dockerapi
+      target: dockerapi
     security_opt:
       - label=disable
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     environment:
-      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taram}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -47,11 +88,11 @@ services:
           - monit
 
   ipv6nat:
+    image: robbertkl/ipv6nat
     depends_on:
       - unbound
       - monit
       - dockerapi
-    image: robbertkl/ipv6nat
     security_opt:
       - label=disable
     restart: always
@@ -72,3 +113,6 @@ networks:
       config:
         - subnet: ${IPV4_NETWORK:-172.22.1}.0/24
         - subnet: ${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+
+volumes:
+  redis-vol-1:

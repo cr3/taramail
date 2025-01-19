@@ -1,1 +1,5 @@
-.venv
+*
+!README.rst
+!pyproject.toml
+!poetry.lock
+!taram

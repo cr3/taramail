@@ -4,7 +4,8 @@ RUN apt update && apt install -y \
     curl \
     bind9-dnsutils \
     monitoring-plugins-standard \
-    monit
+    monit \
+    redis-tools
 
 COPY --chmod=600 monitrc /etc/monit/monitrc
 COPY conf /etc/monit/conf-enabled

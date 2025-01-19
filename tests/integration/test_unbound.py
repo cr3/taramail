@@ -14,6 +14,6 @@ def resolve(name, ip, port=53):
 
 
 def test_unbound_resolve(unbound_client):
-    """The unbound clien should resolve domain names."""
+    """The unbound client should resolve domain names."""
     answer = retry(resolve, "github.com", unbound_client.ip).catching(LifetimeTimeout)
-    assert str(answer.canonical_name()) == "github.com."
+    assert answer.canonical_name().to_text() == "github.com."
