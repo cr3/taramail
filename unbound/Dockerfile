@@ -1,13 +1,9 @@
-FROM alpine:3.20
+FROM alpinelinux/unbound
 
 RUN apk add --update --no-cache \
   curl \
-  bind-tools \
-  unbound \
   bash \
-  openssl \
-  drill \
-  tzdata \
+  bind-tools \
   && install -d -g unbound -m 775 /etc/unbound
 
 COPY healthcheck.sh /
