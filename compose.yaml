@@ -16,8 +16,6 @@ services:
     networks:
       mail-network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
-        aliases:
-          - redis
 
   clamd:
     image: clamav/clamav:1.4.1
@@ -31,9 +29,28 @@ services:
       - ./clamd/freshclam.conf:/etc/clamav/freshclam.conf:ro,Z
       - clamd-vol-1:/var/lib/clamav
     networks:
-      mail-network:
-        aliases:
-          - clamd
+      - mail-network
+
+  rspamd:
+    build: rspamd
+    stop_grace_period: 30s
+    depends_on:
+      - clamd
+      - redis
+    environment:
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
+      - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+      - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
+      - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
+    volumes:
+      - ./rspamd/custom/:/etc/rspamd/custom:z
+      - rspamd-vol-1:/var/lib/rspamd
+    restart: always
+    hostname: rspamd
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    networks:
+      - mail-network
 
   netfilter:
     build:
@@ -41,8 +58,6 @@ services:
       args:
         PYTHON_EXTRAS: netfilter
       target: netfilter
-    depends_on:
-      - redis
     stop_grace_period: 30s
     restart: always
     privileged: true
@@ -67,8 +82,6 @@ services:
     networks:
       mail-network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
-        aliases:
-          - unbound
 
   dockerapi:
     build:
@@ -86,9 +99,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      mail-network:
-        aliases:
-          - dockerapi
+      - mail-network
 
   monit:
     build: monit
@@ -98,10 +109,10 @@ services:
       - dockerapi
     ports:
       - 2812
+    volumes:
+      - rspamd-vol-1:/var/lib/rspamd
     networks:
-      mail-network:
-        aliases:
-          - monit
+      - mail-network
 
   ipv6nat:
     image: robbertkl/ipv6nat
@@ -109,6 +120,7 @@ services:
       - clamd
       - dockerapi
       - monit
+      - rspamd
       - unbound
     security_opt:
       - label=disable
@@ -134,3 +146,4 @@ networks:
 volumes:
   clamd-vol-1:
   redis-vol-1:
+  rspamd-vol-1:

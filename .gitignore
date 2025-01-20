@@ -1,6 +1,10 @@
 # Private files
 dyndns/settings.txt
 
+# Rspamd
+rspamd/custom/mail_networks.map
+rspamd/custom/rspamd_trusted.map
+
 # pytest-xprocess cache
 .xprocess/
 

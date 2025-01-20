@@ -3,6 +3,7 @@ FROM debian:bookworm-slim
 RUN apt update && apt install -y \
     curl \
     bind9-dnsutils \
+    jq \
     monitoring-plugins-standard \
     monit \
     redis-tools

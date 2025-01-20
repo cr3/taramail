@@ -59,6 +59,14 @@ def redis_client(project, process):
 
 
 @pytest.fixture(scope="session")
+def rspamd_client(project, process):
+    """Clamd client fixture."""
+    server = ComposeServer("listening for control commands", project=project, process=process)
+    with server.run("rspamd") as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
 def unbound_client(project, process):
     """Unbound client fixture."""
     server = ComposeServer("start of service", project=project, process=process)

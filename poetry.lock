@@ -2024,4 +2024,4 @@ netfilter = ["dnspython", "ipaddress", "pip-nftables", "redis"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6fe2e6a15b566ea3819b680e60bde5fe3c3c18702ad28590db6cba70581cd778"
+content-hash = "26d86572f2b04407dcc3a4acdf06ec1452ec256878916d0acbea05d8a865c467"

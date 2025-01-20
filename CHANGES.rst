@@ -1,8 +1,9 @@
 Version 0.2.0
 -------------
 
-Released 2025-01-19
+Released 2025-01-20
 
+-   Add rspamd service.
 -   Add clamd service.
 -   Add dockerapi service.
 -   Add dyndns service.
