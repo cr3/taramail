@@ -1,8 +1,9 @@
 Version 0.2.0
 -------------
 
-Released 2025-01-20
+Released 2025-01-22
 
+-   Add mysql service.
 -   Add rspamd service.
 -   Add clamd service.
 -   Add dockerapi service.

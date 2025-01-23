@@ -5,8 +5,9 @@ from datetime import datetime
 
 from attrs import define
 from more_itertools import only
-from pytest_xdocker.docker import DockerContainer, docker
+from pytest_xdocker.docker import DockerContainer
 from pytest_xdocker.process import ProcessData, ProcessServer
+from pytest_xdocker.xdocker import xdocker
 
 
 @define(frozen=True)
@@ -39,11 +40,12 @@ class ComposeClient:
 
 
 class ComposeServer(ProcessServer):
-    def __init__(self, pattern, project="test", **kwargs):
-        """Initilize a compose service."""
+    def __init__(self, pattern, project="test", env_file="/dev/null", **kwargs):
+        """Initilize a compose server."""
         super().__init__(**kwargs)
         self.pattern = pattern
         self.project = project
+        self.env_file = env_file
 
     def __repr__(self):
         return "{cls}(pattern={pattern!r}, project={project!r})".format(
@@ -52,10 +54,20 @@ class ComposeServer(ProcessServer):
             project=self.project,
         )
 
+    def full_name(self, name):
+        return f"{self.project}-{name}-1"
+
     def prepare_func(self, controldir):
         """Prepare the function to run the compose service."""
+        full_name = self.full_name(controldir.basename)
         command = (
-            docker.compose().with_project_name(self.project).up(controldir.basename).with_force_recreate().with_build()
+            xdocker.compose()
+            .with_project_name(self.project)
+            .with_env_file(self.env_file)
+            .run(controldir.basename)
+            .with_name(full_name)
+            .with_build()
+            .with_remove()
         )
 
         return ProcessData(self.pattern, command)
@@ -64,4 +76,5 @@ class ComposeServer(ProcessServer):
     def run(self, name):
         """Return an `ComposeClient` to the running service."""
         with super().run(name):
-            yield ComposeClient(f"{self.project}-{name}-1")
+            full_name = self.full_name(name)
+            yield ComposeClient(full_name)

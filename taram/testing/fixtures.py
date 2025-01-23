@@ -2,6 +2,8 @@
 
 import logging
 import os
+from contextlib import contextmanager
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +11,20 @@ import pytest
 from taram.logger import setup_logger
 from taram.testing.compose import ComposeServer
 from taram.testing.logger import LoggerHandler
+
+
+@contextmanager
+def temp_env_file(env):
+    """Yield a temporary env file that can be passed to docker compose."""
+    with NamedTemporaryFile(delete=False) as tmp:
+        for k, v in env.items():
+            tmp.write(f"{k}={v}\n".encode())
+        tmp.close()
+
+        try:
+            yield tmp.name
+        finally:
+            os.unlink(tmp.name)
 
 
 @pytest.fixture(scope="session")
@@ -22,14 +38,21 @@ def dockerapi_app(project):
 
     from taram.dockerapi import app
 
-    with patch.dict(os.environ, {"COMPOSE_PROJECT_NAME": project}), TestClient(app) as client:
+    env = {
+        "COMPOSE_PROJECT_NAME": project,
+    }
+    with patch.dict(os.environ, env), TestClient(app) as client:
         yield client
 
 
 @pytest.fixture(scope="session")
 def clamd_client(project, process):
     """Clamd client fixture."""
-    server = ComposeServer("socket found, clamd started", project=project, process=process)
+    server = ComposeServer(
+        "socket found, clamd started",
+        project=project,
+        process=process,
+    )
     with server.run("clamd") as client:
         yield client
 
@@ -37,39 +60,93 @@ def clamd_client(project, process):
 @pytest.fixture(scope="session")
 def dockerapi_client(project, process):
     """Dockerapi client fixture."""
-    server = ComposeServer("Uvicorn running on", project=project, process=process)
-    with server.run("dockerapi") as client:
-        yield client
+    env = {
+        "COMPOSE_PROJECT_NAME": project,
+    }
+    with temp_env_file(env) as env_file:
+        server = ComposeServer(
+            "Uvicorn running on",
+            env_file=env_file,
+            project=project,
+            process=process,
+        )
+        with server.run("dockerapi") as client, patch.dict(os.environ, env):
+            yield client
+
+
+@pytest.fixture(scope="session")
+def mysql_client(project, process):
+    """MySQL client fixture."""
+    # These must be static because they are persisted in mysql-vol-1.
+    env = {
+        "DBNAME": "test",
+        "DBUSER": "test",
+        "DBPASS": "test",
+        "DBROOT": "test",
+    }
+    with temp_env_file(env) as env_file:
+        server = ComposeServer(
+            "mysqld: ready for connections",
+            env_file=env_file,
+            project=project,
+            process=process,
+        )
+        with server.run("mysql") as client, patch.dict(os.environ, env):
+            yield client
 
 
 @pytest.fixture(scope="session")
 def redis_client(project, process):
     """Redis client fixture."""
-    from redis import StrictRedis as Redis
+    from redis import StrictRedis
 
-    server = ComposeServer("Ready to accept connections tcp", project=project, process=process)
+    server = ComposeServer(
+        "Ready to accept connections tcp",
+        project=project,
+        process=process,
+    )
     with server.run("redis") as client:
-        environ = {
+        env = {
             "REDIS_SLAVEOF_IP": client.ip,
             "REDIS_SLAVEOF_PORT": "6379",
         }
-        with patch.dict(os.environ, environ):
-            redis = Redis(host=client.ip, port=6379, decode_responses=True, db=0)
+        with patch.dict(os.environ, env):
+            redis = StrictRedis(
+                host=client.ip,
+                port=6379,
+                decode_responses=True,
+                db=0,
+            )
             yield redis
 
 
 @pytest.fixture(scope="session")
-def rspamd_client(project, process):
+def rspamd_client(redis_client, project, process):
     """Clamd client fixture."""
-    server = ComposeServer("listening for control commands", project=project, process=process)
-    with server.run("rspamd") as client:
-        yield client
+    connection = redis_client.monitor().connection
+    env = {
+        "REDIS_SLAVEOF_IP": connection.host,
+        "REDIS_SLAVEOF_PORT": str(connection.port),
+    }
+    with temp_env_file(env) as env_file:
+        server = ComposeServer(
+            "listening for control commands",
+            env_file=env_file,
+            project=project,
+            process=process,
+        )
+        with server.run("rspamd") as client:
+            yield client
 
 
 @pytest.fixture(scope="session")
 def unbound_client(project, process):
     """Unbound client fixture."""
-    server = ComposeServer("start of service", project=project, process=process)
+    server = ComposeServer(
+        "start of service",
+        project=project,
+        process=process,
+    )
     with server.run("unbound") as client:
         yield client
 

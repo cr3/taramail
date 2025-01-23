@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+
+err_count=0
+
+. $(dirname $(readlink -f $0))/.env
+
+/usr/lib/nagios/plugins/check_mysql -s /var/run/mysqld/mysqld.sock -u ${DBUSER} -p ${DBPASS} -d ${DBNAME}
+err_count=$(( ${err_count} + $? ))
+
+/usr/lib/nagios/plugins/check_mysql_query -s /var/run/mysqld/mysqld.sock -u ${DBUSER} -p ${DBPASS} -d ${DBNAME} -q "SELECT COUNT(*) FROM information_schema.tables"
+err_count=$(( ${err_count} + $? ))
+
+exit $err_count

@@ -4,6 +4,36 @@ services:
     volumes:
       - ./dyndns/settings.txt:/settings.txt
 
+  unbound:
+    build: unbound
+    volumes:
+      - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
+    restart: always
+    networks:
+      mail-network:
+        ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
+
+  mysql:
+    image: mariadb:10.5
+    depends_on:
+      - unbound
+    stop_grace_period: 45s
+    volumes:
+      - ./mysql/conf.d/:/etc/mysql/conf.d/:ro,Z
+      - mysql-vol-1:/var/lib/mysql/
+      - mysql-socket-vol-1:/var/run/mysqld/
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DBROOT}
+      - MYSQL_DATABASE=${DBNAME}
+      - MYSQL_USER=${DBUSER}
+      - MYSQL_PASSWORD=${DBPASS}
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    restart: always
+    ports:
+      - "${SQL_PORT:-127.0.0.1:13306}:3306"
+    networks:
+      - mail-network
+
   redis:
     image: redis:7-alpine
     volumes:
@@ -74,15 +104,6 @@ services:
     volumes:
       - /lib/modules:/lib/modules:ro
 
-  unbound:
-    build: unbound
-    volumes:
-      - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
-    restart: always
-    networks:
-      mail-network:
-        ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
-
   dockerapi:
     build:
       context: .
@@ -107,10 +128,16 @@ services:
       - ${IPV4_NETWORK:-172.22.1}.254
     depends_on:
       - dockerapi
+      - mysql
     ports:
       - 2812
     volumes:
       - rspamd-vol-1:/var/lib/rspamd
+      - mysql-socket-vol-1:/var/run/mysqld/
+    environment:
+      - DBNAME=${DBNAME}
+      - DBUSER=${DBUSER}
+      - DBPASS=${DBPASS}
     networks:
       - mail-network
 
@@ -120,6 +147,7 @@ services:
       - clamd
       - dockerapi
       - monit
+      - mysql
       - rspamd
       - unbound
     security_opt:
@@ -145,5 +173,7 @@ networks:
 
 volumes:
   clamd-vol-1:
+  mysql-vol-1:
+  mysql-socket-vol-1:
   redis-vol-1:
   rspamd-vol-1:
