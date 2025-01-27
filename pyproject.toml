@@ -14,14 +14,18 @@ python = "^3.11"
 attrs = "^24.3.0"
 more-itertools = "^10.5.0"
 aiodocker = {version = "^0.24.0", optional = true}
+alembic = {version = "^1.14.1", optional = true}
 dnspython = {version = "^2.7.0", optional = true}
 fastapi = {version = "^0.115.6", optional = true}
 ipaddress = {version = "^1.0.23", optional = true}
+mysqlclient = {version = "^2.2.7", optional = true}
 pip-nftables = {version = "^1.0.2.post1", optional = true}
 redis = {version = "^5.2.1", optional = true}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.37", optional = true}
 uvicorn = {version = "^0.34.0", optional = true}
 
 [tool.poetry.extras]
+backend = ["alembic", "fastapi", "mysqlclient", "sqlalchemy", "uvicorn"]
 dockerapi = ["aiodocker", "fastapi", "uvicorn"]
 netfilter = ["dnspython", "ipaddress", "pip-nftables", "redis"]
 
@@ -53,9 +57,14 @@ sphinxcontrib-log-cabinet = "^1.0.1"
 sphinx-rtd-theme = "^1.2.0"
 
 [tool.poetry.plugins."pytest11"]
+taram-db = "taram.testing.db"
 taram = "taram.testing.fixtures"
 
+[tool.poetry.plugins."pytest_unique"]
+domain = "taram.testing.unique:unique_domain"
+
 [tool.poetry.scripts]
+backend = "taram.backend:main"
 netfilter = "taram.netfilter:main"
 
 [build-system]

@@ -28,6 +28,11 @@ class ComposeClient:
         return self.container.inspect["Id"]
 
     @property
+    def env(self):
+        env = self.container.inspect["Config"]["Env"]
+        return dict(e.split("=", 1) for e in env)
+
+    @property
     def ip(self):
         network_settings = self.container.inspect["NetworkSettings"]
         network = only(network_settings["Networks"].values())

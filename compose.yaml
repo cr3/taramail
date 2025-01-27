@@ -17,6 +17,7 @@ services:
     image: mariadb:10.5
     depends_on:
       - unbound
+    user: mysql
     stop_grace_period: 45s
     volumes:
       - ./mysql/conf.d/:/etc/mysql/conf.d/:ro,Z
@@ -46,6 +47,28 @@ services:
     networks:
       mail-network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
+
+  backend:
+    build:
+      context: .
+      args:
+        PYTHON_EXTRAS: backend
+      target: backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_started
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    environment:
+      - DBDRIVER=mysql
+      - DBNAME=${DBNAME}
+      - DBUSER=${DBUSER}
+      - DBPASS=${DBPASS}
+    volumes:
+      - mysql-socket-vol-1:/var/run/mysqld/
+    networks:
+      - mail-network
 
   clamd:
     image: clamav/clamav:1.4.1

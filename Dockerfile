@@ -16,7 +16,11 @@ FROM base AS build
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 RUN apt update \
-  && apt install -y --no-install-recommends curl build-essential \
+  && apt install -y --no-install-recommends \
+  build-essential \
+  curl \
+  libmariadb-dev \
+  pkg-config \
   && curl -sSL https://install.python-poetry.org | python3 -
 
 WORKDIR /app
@@ -36,6 +40,15 @@ ENV PATH="/app/.venv/bin:$PATH"
 WORKDIR /app
 
 COPY --from=build /app ./
+
+FROM runtime AS backend
+
+RUN apt update \
+  && apt install -y --no-install-recommends libmariadb3 \
+  && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 80
+CMD ["uvicorn", "--host=0.0.0.0", "--port=80", "taram.backend:app"]
 
 FROM runtime AS dockerapi
 

@@ -1,5 +1,6 @@
 *
 !README.rst
+!alembic*
 !pyproject.toml
 !poetry.lock
 !taram

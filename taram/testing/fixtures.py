@@ -2,8 +2,8 @@
 
 import logging
 import os
-from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+from textwrap import dedent
 from unittest.mock import patch
 
 import pytest
@@ -13,12 +13,23 @@ from taram.testing.compose import ComposeServer
 from taram.testing.logger import LoggerHandler
 
 
-@contextmanager
-def temp_env_file(env):
-    """Yield a temporary env file that can be passed to docker compose."""
+@pytest.fixture(scope="session")
+def project():
+    return "test"
+
+
+@pytest.fixture(scope="session")
+def env_file(project):
+    # These must be static because they are persisted in mysql-vol-1.
     with NamedTemporaryFile(delete=False) as tmp:
-        for k, v in env.items():
-            tmp.write(f"{k}={v}\n".encode())
+        tmp.write(dedent(f"""\
+            COMPOSE_PROJECT_NAME={project}
+            DBDRIVER=mysql
+            DBNAME=test
+            DBUSER=test
+            DBPASS=test
+            DBROOT=test
+        """).encode())
         tmp.close()
 
         try:
@@ -27,9 +38,52 @@ def temp_env_file(env):
             os.unlink(tmp.name)
 
 
+@pytest.fixture
+def backend_app(db_session, project):
+    from fastapi.testclient import TestClient
+
+    from taram.backend import app
+    from taram.db import get_session
+
+    def override_get_session():
+        try:
+            yield db_session
+        finally:
+            db_session.close()
+
+    app.dependency_overrides[get_session] = override_get_session
+
+    env = {
+        "DBDRIVER": "sqlite",
+        "DBNAME": ":memory:",
+    }
+    with patch.dict(os.environ, env), TestClient(app) as client:
+        yield client
+
+
 @pytest.fixture(scope="session")
-def project():
-    return "test"
+def backend_client(env_file, project, process):
+    """Backend client fixture."""
+    server = ComposeServer(
+        "Uvicorn running on",
+        env_file=env_file,
+        project=project,
+        process=process,
+    )
+    with server.run("backend") as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
+def clamd_client(project, process):
+    """Clamd client fixture."""
+    server = ComposeServer(
+        "socket found, clamd started",
+        project=project,
+        process=process,
+    )
+    with server.run("clamd") as client:
+        yield client
 
 
 @pytest.fixture
@@ -46,53 +100,30 @@ def dockerapi_app(project):
 
 
 @pytest.fixture(scope="session")
-def clamd_client(project, process):
-    """Clamd client fixture."""
+def dockerapi_client(env_file, project, process):
+    """Dockerapi client fixture."""
     server = ComposeServer(
-        "socket found, clamd started",
+        "Uvicorn running on",
+        env_file=env_file,
         project=project,
         process=process,
     )
-    with server.run("clamd") as client:
+    with server.run("dockerapi") as client:
         yield client
 
 
 @pytest.fixture(scope="session")
-def dockerapi_client(project, process):
-    """Dockerapi client fixture."""
-    env = {
-        "COMPOSE_PROJECT_NAME": project,
-    }
-    with temp_env_file(env) as env_file:
-        server = ComposeServer(
-            "Uvicorn running on",
-            env_file=env_file,
-            project=project,
-            process=process,
-        )
-        with server.run("dockerapi") as client, patch.dict(os.environ, env):
-            yield client
-
-
-@pytest.fixture(scope="session")
-def mysql_client(project, process):
+def mysql_client(env_file, project, process):
     """MySQL client fixture."""
-    # These must be static because they are persisted in mysql-vol-1.
-    env = {
-        "DBNAME": "test",
-        "DBUSER": "test",
-        "DBPASS": "test",
-        "DBROOT": "test",
-    }
-    with temp_env_file(env) as env_file:
-        server = ComposeServer(
-            "mysqld: ready for connections",
-            env_file=env_file,
-            project=project,
-            process=process,
-        )
-        with server.run("mysql") as client, patch.dict(os.environ, env):
-            yield client
+    server = ComposeServer(
+        "mysqld: ready for connections",
+        # "Stopping temporary server",
+        env_file=env_file,
+        project=project,
+        process=process,
+    )
+    with server.run("mysql") as client:
+        yield client
 
 
 @pytest.fixture(scope="session")
@@ -123,20 +154,13 @@ def redis_client(project, process):
 @pytest.fixture(scope="session")
 def rspamd_client(redis_client, project, process):
     """Clamd client fixture."""
-    connection = redis_client.monitor().connection
-    env = {
-        "REDIS_SLAVEOF_IP": connection.host,
-        "REDIS_SLAVEOF_PORT": str(connection.port),
-    }
-    with temp_env_file(env) as env_file:
-        server = ComposeServer(
-            "listening for control commands",
-            env_file=env_file,
-            project=project,
-            process=process,
-        )
-        with server.run("rspamd") as client:
-            yield client
+    server = ComposeServer(
+        "listening for control commands",
+        project=project,
+        process=process,
+    )
+    with server.run("rspamd") as client:
+        yield client
 
 
 @pytest.fixture(scope="session")

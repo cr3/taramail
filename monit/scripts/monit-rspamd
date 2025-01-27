@@ -22,5 +22,5 @@ if [ "$(curl -s --max-time 10 ${host_ip}:9900 2> /dev/null ; echo $?)" == "28" ]
 else
   echo "Milter check succeeded"
 fi
- 
+
 exit $err_count

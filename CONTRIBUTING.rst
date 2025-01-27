@@ -186,3 +186,17 @@ Update the apidoc when adding new modules:
 Open ``build/html/index.html`` in your browser to view the docs.
 
 Read more about `Sphinx <https://www.sphinx-doc.org/en/stable/>`__.
+
+
+Upgrading the database
+----------------------
+
+Auto-generate up upgrade scripts under the ``alembic/versions`` directory
+using a service like ``backend``:
+
+.. code-block:: text
+
+    > docker compose run -u $(id -u):$(id -g) -v $(pwd)/alembic:/app/alembic --build backend \
+      bash -c "alembic upgrade head && alembic revision --autogenerate -m 'my message'"
+
+Read more about `Alembic <https://alembic.sqlalchemy.org/en/latest/>`__.
