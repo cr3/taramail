@@ -1,3 +1,5 @@
+-include .env
+
 VENV := .venv
 
 PYTHON := poetry run python
@@ -42,8 +44,18 @@ docs: $(VENV)
 	@echo Building docs: Running sphinx-build
 	@poetry run sphinx-build -W -d build/doctrees docs build/html
 
+ssl-example:
+	@echo Generating snake-oil certificate: Running openssl
+	@mkdir -p $@
+	@openssl req -x509 -newkey rsa:4096 -keyout $@/key.pem -out $@/cert.pem -days 365 -subj "/C=CA/ST=QC/L=Notre-Dame-du-Laus/O=mail/OU=mail/CN=${MAIL_HOSTNAME}" -sha256 -nodes
+
+ssl: ssl-example
+	@echo Copying snake-oil certificate
+	@mkdir -p $@
+	@cp -n -d $^/*.pem $@/
+
 .PHONY: deploy
-deploy:
+deploy: ssl
 	@echo Deploying
 	@docker compose pull
 	@docker compose up --force-recreate --build -d

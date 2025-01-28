@@ -29,6 +29,7 @@ def env_file(project):
             DBUSER=test
             DBPASS=test
             DBROOT=test
+            MAIL_HOSTNAME=test.local
         """).encode())
         tmp.close()
 
@@ -117,12 +118,24 @@ def mysql_client(env_file, project, process):
     """MySQL client fixture."""
     server = ComposeServer(
         "mysqld: ready for connections",
-        # "Stopping temporary server",
         env_file=env_file,
         project=project,
         process=process,
     )
     with server.run("mysql") as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
+def postfix_client(env_file, project, process):
+    """Postfix client fixture."""
+    server = ComposeServer(
+        "starting the Postfix mail system",
+        env_file=env_file,
+        project=project,
+        process=process,
+    )
+    with server.run("postfix") as client:
         yield client
 
 

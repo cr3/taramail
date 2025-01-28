@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+
+err_count=0
+
+/usr/lib/nagios/plugins/check_smtp -H postfix -p 589 -4 -S -D 7
+err_count=$(( ${err_count} + $? ))
+
+exit $err_count

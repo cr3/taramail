@@ -1,0 +1,3 @@
+check program postfix with path "/opt/monit/scripts/monit-postfix"
+  restart program = "/usr/bin/curl --silent -X POST http://dockerapi/services/postfix/restart"
+  if status != 0 for 8 cycles then restart

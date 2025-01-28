@@ -10,6 +10,7 @@ Released 2025-01-27
 -   Add monit service.
 -   Add mysql service.
 -   Add netfilter service.
+-   Add postfix service.
 -   Add rspamd service.
 -   Add unbound service.
 

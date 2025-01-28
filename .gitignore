@@ -1,9 +1,23 @@
-# Private files
+# Dyndns
 dyndns/settings.txt
+
+# Postfix
+postfix/conf/custom_postscreen_whitelist.cidr
+postfix/conf/custom_transport.pcre
+postfix/conf/extra.cf
+postfix/conf/sni.map
+postfix/conf/sni.map.db
+postfix/conf/sql
+postfix/conf/dns_blocklists.cf
+postfix/conf/dnsbl_reply.map
 
 # Rspamd
 rspamd/custom/mail_networks.map
 rspamd/custom/rspamd_trusted.map
+
+# SSL
+ssl-example/
+ssl/
 
 # pytest-xprocess cache
 .xprocess/
