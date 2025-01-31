@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 
-err_count=0
-
 . $(dirname $(readlink -f $0))/.env
+
+err_count=0
 
 /usr/lib/nagios/plugins/check_mysql -s /var/run/mysqld/mysqld.sock -u ${DBUSER} -p ${DBPASS} -d ${DBNAME}
 err_count=$(( ${err_count} + $? ))

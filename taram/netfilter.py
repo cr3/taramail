@@ -19,8 +19,8 @@ import dns.resolver
 from attrs import define, field
 from more_itertools import partition
 from nftables import Nftables
-from redis import StrictRedis as Redis
 
+from redis import StrictRedis
 from taram.logger import (
     LoggerHandlerAction,
     LoggerLevelAction,
@@ -609,7 +609,7 @@ class Netfilter:
         host = os.getenv("REDIS_SLAVEOF_IP", "") or os.getenv("IPV4_NETWORK", "172.22.1") + ".249"
         port = int(os.getenv("REDIS_SLAVEOF_PORT", "") or "6379")
 
-        redis = Redis(host=host, port=port, decode_responses=True, db=0)
+        redis = StrictRedis(host=host, port=port, decode_responses=True, db=0, password=os.environ["REDISPASS"])
         ipv4_tables = NetfilterTables(name, comment, "ip").init_chains()
         ipv6_tables = NetfilterTables(name, comment, "ip6").init_chains()
         return cls(redis, ipv4_tables, ipv6_tables)

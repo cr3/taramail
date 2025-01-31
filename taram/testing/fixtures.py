@@ -29,6 +29,7 @@ def env_file(project):
             DBUSER=test
             DBPASS=test
             DBROOT=test
+            REDISPASS=test
             MAIL_HOSTNAME=test.local
         """).encode())
         tmp.close()
@@ -140,35 +141,33 @@ def postfix_client(env_file, project, process):
 
 
 @pytest.fixture(scope="session")
-def redis_client(project, process):
+def redis_client(env_file, project, process):
     """Redis client fixture."""
     from redis import StrictRedis
 
     server = ComposeServer(
         "Ready to accept connections tcp",
+        env_file=env_file,
         project=project,
         process=process,
     )
     with server.run("redis") as client:
-        env = {
-            "REDIS_SLAVEOF_IP": client.ip,
-            "REDIS_SLAVEOF_PORT": "6379",
-        }
-        with patch.dict(os.environ, env):
-            redis = StrictRedis(
-                host=client.ip,
-                port=6379,
-                decode_responses=True,
-                db=0,
-            )
-            yield redis
+        redis = StrictRedis(
+            host=client.ip,
+            port=6379,
+            decode_responses=True,
+            db=0,
+            password=client.env["REDISPASS"],
+        )
+        yield redis
 
 
 @pytest.fixture(scope="session")
-def rspamd_client(redis_client, project, process):
-    """Clamd client fixture."""
+def rspamd_client(redis_client, env_file, project, process):
+    """Rspamd client fixture."""
     server = ComposeServer(
         "listening for control commands",
+        env_file=env_file,
         project=project,
         process=process,
     )

@@ -1,8 +1,10 @@
 #!/usr/bin/bash
 
+. $(dirname $(readlink -f $0))/.env
+
 err_count=0
 
-/usr/lib/nagios/plugins/check_tcp -4 -H redis -p 6379 -E -s "PING\n" -q "QUIT" -e "PONG"
+/usr/lib/nagios/plugins/check_tcp -4 -H redis -p 6379 -E -s "AUTH ${REDISPASS}\nPING\n" -q "QUIT" -e "PONG"
 err_count=$(( ${err_count} + $? ))
 
 exit $err_count
