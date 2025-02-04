@@ -127,6 +127,44 @@ uptime, ensuring the mail server remains resilient and functional.
 
 .. _Monit: https://mmonit.com/monit/
 
+Postfix
+-------
+
+`Postfix`_ is a Mail Transfer Agent (MTA) for handling email delivery
+and relay. Here’s why Postfix is chosen and how it fits into the
+architecture:
+
+* **Reliable and Secure MTA**
+
+  Widely used, battle-tested MTA known for its security, performance,
+  and reliability. It has built-in protections against spam and abuse,
+  making it a solid choice for a modern mail server.
+
+* **Handling Incoming and Outgoing Mail**
+
+  Receives emails from the internet (SMTP) and passes them to Dovecot
+  for mailbox storage. Sends emails from local mailboxes to external
+  recipients (SMTP relay).
+
+* **Integration with Other Services**
+
+  Hands off mail to Dovecot for storage and retrieval. Routes emails
+  through Rspamd for spam and virus filtering. When users send emails
+  via SOGo, ensures they are delivered correctly.
+
+* **Performance and Queue Management**
+
+  Optimized for handling high email volumes efficiently. Queues messages
+  properly and retries delivery in case of temporary failures.
+
+* **Support for TLS and Encryption**
+
+  Configured with TLS encryption for secure email transmission. Also
+  supports authentication mechanisms like SPF, DKIM, and DMARC for
+  email security.
+
+.. _Postfix: https://www.postfix.org/
+
 Rspamd
 ------
 
