@@ -44,7 +44,7 @@ COPY --from=build /app ./
 FROM runtime AS backend
 
 RUN apt update \
-  && apt install -y --no-install-recommends libmariadb3 \
+  && apt install -y --no-install-recommends libmariadb3 libmemcached11 \
   && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 80
