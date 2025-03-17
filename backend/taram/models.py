@@ -135,7 +135,7 @@ class DomainModel(TimestampMixin, SQLModel):
     defquota: Mapped[int] = mapped_column(BigInteger, server_default=f"{3 * gibi}")
     maxquota: Mapped[int] = mapped_column(BigInteger, server_default=f"{10 * gibi}")
     quota: Mapped[int] = mapped_column(BigInteger, server_default=f"{10 * gibi}")
-    relayhost: Mapped[str] = mapped_column(String(255), server_default="0")
+    relayhost: Mapped[int] = mapped_column(Integer, server_default="0")
     backupmx: Mapped[bool] = mapped_column(server_default="0")
     gal: Mapped[bool] = mapped_column(server_default="1")
     relay_all_recipients: Mapped[bool] = mapped_column(server_default="0")
@@ -219,7 +219,7 @@ class MailboxModel(TimestampMixin, SQLModel):
     password: Mapped[str] = mapped_column(String(255))
     name: Mapped[str | None] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(String(255))
-    mailbox_path_prefix: Mapped[str | None] = mapped_column(String(150), server_default="/var/mail")
+    mailbox_path_prefix: Mapped[str | None] = mapped_column(String(150), server_default="/var/vmail/")
     quota: Mapped[int] = mapped_column(BigInteger, server_default=f"{10 * gibi}")
     local_part: Mapped[str] = mapped_column(String(255))
     domain: Mapped[str] = mapped_column(String(255))
@@ -480,7 +480,7 @@ class SogoQuickContactModel(SQLModel):
 class SogoSessionsFolderModel(SQLModel):
 
     c_id: Mapped[str] = mapped_column(String(255), primary_key=True)
-    c_value: Mapped[str] = mapped_column(String(255))
+    c_value: Mapped[str] = mapped_column(String(4096))
     c_creationdate: Mapped[int] = mapped_column()
     c_lastseen: Mapped[int] = mapped_column()
 

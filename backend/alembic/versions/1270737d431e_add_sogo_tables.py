@@ -127,7 +127,7 @@ def upgrade() -> None:
     op.create_table(
         "sogo_sessions_folder",
         sa.Column("c_id", sa.String(length=255), nullable=False),
-        sa.Column("c_value", sa.String(length=255), nullable=False),
+        sa.Column("c_value", sa.String(length=4096), nullable=False),
         sa.Column("c_creationdate", sa.Integer(), nullable=False),
         sa.Column("c_lastseen", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("c_id"),
