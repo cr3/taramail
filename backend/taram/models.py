@@ -93,7 +93,6 @@ class AppPasswdModel(TimestampMixin, SQLModel):
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
     name: Mapped[str] = mapped_column(String(255))
-    mailbox: Mapped[str] = mapped_column(String(255))
     mailbox: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"))
     domain: Mapped[str] = mapped_column(String(255))
     password: Mapped[str] = mapped_column(String(255))
@@ -341,6 +340,22 @@ class SettingsmapModel(TimestampMixin, SQLModel):
     __tablename__ = "settingsmap"
 
 
+class SieveFiltersModel(TimestampMixin, SQLModel):
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)  # noqa: A003
+    username: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"))
+    script_desc: Mapped[str] = mapped_column(String(255))
+    script_name: Mapped[str] = mapped_column(Enum("active", "inactive"))
+    script_data: Mapped[str] = mapped_column(Text)
+    filter_type: Mapped[str] = mapped_column(Enum("postfilter", "prefilter"))
+
+    __tablename__ = "sieve_filters"
+    __table_args__ = (
+        Index("sieve_filters_username_key", username),
+        Index("sieve_filters_script_desc_key", script_desc),
+    )
+
+
 class SogoStaticView(SQLModel):
 
     c_uid: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -560,7 +575,7 @@ class TransportsModel(SQLModel):
 
 class UserAclModel(SQLModel):
 
-    username: Mapped[str] = mapped_column(ForeignKey("mailbox.username"), primary_key=True)
+    username: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"), primary_key=True)
     spam_alias: Mapped[bool] = mapped_column(server_default="1")
     tls_policy: Mapped[bool] = mapped_column(server_default="1")
     spam_score: Mapped[bool] = mapped_column(server_default="1")
@@ -583,7 +598,7 @@ class UserAclModel(SQLModel):
 
 class UserAttributesModel(SQLModel):
 
-    username: Mapped[str] = mapped_column(ForeignKey("mailbox.username"), primary_key=True)
+    username: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"), primary_key=True)
     force_pw_update: Mapped[bool] = mapped_column(server_default="0")
     tls_enforce_in: Mapped[bool] = mapped_column(server_default="0")
     tls_enforce_out: Mapped[bool] = mapped_column(server_default="0")

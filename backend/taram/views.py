@@ -13,6 +13,7 @@ from taram.models import (
     AliasModel,
     MailboxModel,
     SenderAclModel,
+    SieveFiltersModel,
     SQLModel,
 )
 
@@ -41,7 +42,7 @@ class GroupedMailAliasesView(SQLViewMixin, SQLModel):
         AND active = '1'
         AND sogo_visible = '1'
         AND address NOT LIKE '@%'
-        GROUP BY goto;",
+        GROUP BY goto;
     """
 
     selectable = (
@@ -70,7 +71,7 @@ class GroupedDomainAliasAddressView(SQLViewMixin, SQLModel):
     CREATE VIEW grouped_domain_alias_address (username, ad_alias) AS
         SELECT username, IFNULL(GROUP_CONCAT(local_part, '@', alias_domain SEPARATOR ' '), '') AS ad_alias FROM mailbox
         LEFT OUTER JOIN alias_domain ON target_domain=domain
-        GROUP BY username;",
+        GROUP BY username;
     """
 
     selectable = (
@@ -101,7 +102,7 @@ class GroupedSenderAclView(SQLViewMixin, SQLModel):
     CREATE VIEW grouped_sender_acl (username, send_as_acl) AS
         SELECT logged_in_as, IFNULL(GROUP_CONCAT(send_as SEPARATOR ' '), '') AS send_as_acl FROM sender_acl
         WHERE send_as NOT LIKE '@%'
-        GROUP BY logged_in_as;",
+        GROUP BY logged_in_as;
     """
 
     selectable = (
@@ -127,7 +128,7 @@ class GroupedSenderAclExternalView(SQLViewMixin, SQLModel):
     CREATE VIEW grouped_sender_acl_external (username, send_as_acl) AS
         SELECT logged_in_as, IFNULL(GROUP_CONCAT(send_as SEPARATOR ' '), '') AS send_as_acl FROM sender_acl
         WHERE send_as NOT LIKE '@%' AND external = '1'
-        GROUP BY logged_in_as;",
+        GROUP BY logged_in_as;
     """
 
     selectable = (
@@ -142,6 +143,60 @@ class GroupedSenderAclExternalView(SQLViewMixin, SQLModel):
 
     __table__ = create_view(
         "grouped_sender_acl_external",
+        selectable,
+        SQLModel.metadata,
+        cascade_on_drop=False,
+    )
+
+
+class SieveBeforeView(SQLViewMixin, SQLModel):
+    """View to apply sieve filtering rules before user's personal sieve rules.
+
+    CREATE VIEW sieve_before (id, username, script_name, script_data) AS
+        SELECT md5(script_data), username, script_name, script_data
+        FROM sieve_filters
+        WHERE filter_type = 'prefilter';
+    """
+
+    selectable = (
+        select(
+            func.md5(SieveFiltersModel.script_data).label("id"),
+            SieveFiltersModel.username,
+            SieveFiltersModel.script_name,
+            SieveFiltersModel.script_data,
+        )
+        .filter_by(filter_type="prefilter")
+    )
+
+    __table__ = create_view(
+        "sieve_before",
+        selectable,
+        SQLModel.metadata,
+        cascade_on_drop=False,
+    )
+
+
+class SieveAfterView(SQLViewMixin, SQLModel):
+    """View to apply sieve filtering rules after user's personal sieve rules.
+
+    CREATE VIEW sieve_after (id, username, script_name, script_data) AS
+        SELECT md5(script_data), username, script_name, script_data
+        FROM sieve_filters
+        WHERE filter_type = 'postfilter';"
+    """
+
+    selectable = (
+        select(
+            func.md5(SieveFiltersModel.script_data).label("id"),
+            SieveFiltersModel.username,
+            SieveFiltersModel.script_name,
+            SieveFiltersModel.script_data,
+        )
+        .filter_by(filter_type="postfilter")
+    )
+
+    __table__ = create_view(
+        "sieve_after",
         selectable,
         SQLModel.metadata,
         cascade_on_drop=False,
