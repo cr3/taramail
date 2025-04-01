@@ -7,7 +7,7 @@ from taram.db import get_db_url
 
 
 @pytest.fixture(scope="session")
-def db_url(mysql_client):
+def db_url(mysql_service):
     """Create a SQLAlchemy engine."""
     return get_db_url()
 

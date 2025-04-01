@@ -75,24 +75,24 @@ def get_mailbox_manager(db: DbDep, store: StoreDep, sogo: SogoDep):
 MailboxManagerDep = Annotated[MailboxManager, Depends(get_mailbox_manager)]
 
 
-@app.get("/domains")
+@app.get("/api/domains")
 def get_domains(manager: DomainManagerDep) -> list[str]:
     return [d.domain for d in manager.get_domains()]
 
 
-@app.get("/domains/{domain}")
+@app.get("/api/domains/{domain}")
 def get_domain(domain: str, manager: DomainManagerDep) -> DomainDetails:
     return manager.get_domain_details(domain)
 
 
-@app.post("/domains")
+@app.post("/api/domains")
 def post_domain(create: DomainCreate, manager: DomainManagerDep) -> DomainDetails:
     with db_transaction(manager.db):
         domain = manager.create_domain(create)
     return manager.get_domain_details(domain.domain)
 
 
-@app.put("/domains/{domain}")
+@app.put("/api/domains/{domain}")
 def put_domain(domain: str, update: DomainUpdate, manager: DomainManagerDep) -> DomainDetails:
     with db_transaction(manager.db):
         domain = manager.update_domain(domain, update)
@@ -100,30 +100,30 @@ def put_domain(domain: str, update: DomainUpdate, manager: DomainManagerDep) -> 
     return manager.get_domain_details(domain.domain)
 
 
-@app.delete("/domains/{domain}")
+@app.delete("/api/domains/{domain}")
 def delete_domain(domain: str, manager: DomainManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_domain(domain)
 
 
-@app.get("/mailboxes")
+@app.get("/api/mailboxes")
 def get_mailboxes(manager: MailboxManagerDep) -> list[str]:
     return [d.username for d in manager.get_mailboxes()]
 
 
-@app.get("/mailboxes/{username}")
+@app.get("/api/mailboxes/{username}")
 def get_mailbox(username: str, manager: MailboxManagerDep) -> MailboxDetails:
     return manager.get_mailbox_details(username)
 
 
-@app.post("/mailboxes")
+@app.post("/api/mailboxes")
 def post_mailbox(create: MailboxCreate, manager: MailboxManagerDep) -> MailboxDetails:
     with db_transaction(manager.db):
         mailbox = manager.create_mailbox(create)
     return manager.get_mailbox_details(mailbox.username)
 
 
-@app.put("/mailboxes/{username}")
+@app.put("/api/mailboxes/{username}")
 def put_mailbox(username: str, update: MailboxUpdate, manager: MailboxManagerDep) -> MailboxDetails:
     with db_transaction(manager.db):
         mailbox = manager.update_mailbox(username, update)
@@ -131,7 +131,7 @@ def put_mailbox(username: str, update: MailboxUpdate, manager: MailboxManagerDep
     return manager.get_mailbox_details(mailbox.username)
 
 
-@app.delete("/mailboxes/{username}")
+@app.delete("/api/mailboxes/{username}")
 def delete_mailbox(username: str, manager: MailboxManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_mailbox(username)

@@ -16,7 +16,7 @@ from more_itertools import bucket, only
 
 from taram.http import HTTPSession
 
-DEFAULT_API_URL = "https://taram.ca/"
+DEFAULT_API_URL = "https://taram.ca/api/"
 
 API_URL = os.environ.get("TARAM_API_URL", DEFAULT_API_URL)
 
