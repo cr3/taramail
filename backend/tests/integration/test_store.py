@@ -1,6 +1,9 @@
 """Integration tests for the store module."""
 
+from functools import partial
+
 import pytest
+from pytest_xdocker.retry import retry
 
 
 def test_get_unknown(store, unique):
@@ -29,6 +32,13 @@ def test_set_twice(store, unique):
     assert store.set(key, value1) is True
     assert store.set(key, value2) is True
     assert store.get(key) == value2
+
+
+def test_set_expiration(store, unique):
+    """Setting a key with an expiration should expire the key."""
+    key, value = unique("text"), unique("integer")
+    store.set(key, value, 1)
+    retry(partial(store.get, key)).until(None, delay=0.1)
 
 
 def test_delete_unknown(store, unique):
@@ -87,6 +97,13 @@ def test_hset_and_hget(store, unique):
     key, field, value = unique("text"), unique("text"), unique("text")
     store.hset(key, field, value)
     assert store.hget(key, field) == value
+
+
+def test_hset_expiration(store, unique):
+    """Setting a key and field with an expiration should expire the key."""
+    key, field, value = unique("text"), unique("text"), unique("text")
+    store.hset(key, field, value, 1)
+    retry(partial(store.hget, key, field)).until(None, delay=0.1)
 
 
 def test_hgetall_unknown(store, unique):

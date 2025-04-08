@@ -5,6 +5,7 @@ import os
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from functools import wraps
+from time import time
 
 from attrs import define, field
 from pylibmc import Client
@@ -31,7 +32,7 @@ class Store(ABC):
         """Get the value of key."""
 
     @abstractmethod
-    def set(self, key: str, value: str) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
         """Set key to hold the string value."""
 
     @abstractmethod
@@ -47,7 +48,7 @@ class Store(ABC):
         """Returns all fields and values of the hash stored at key."""
 
     @abstractmethod
-    def hset(self, key: str, field: str, value: str) -> int:
+    def hset(self, key: str, field: str, value: str, ttl: int | None) -> int:
         """Sets the specified field to a value in the hash stored at key."""
 
     @abstractmethod
@@ -104,9 +105,11 @@ class MemcachedStore(Store):
 
         return value
 
-    def set(self, key: str, value: str) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
         """See `Store.set`."""
-        self.client.set(key, str(value))
+        if ttl is None:
+            ttl = -1
+        self.client.set(key, str(value), ttl)
         return True
 
     def delete(self, *keys: str) -> int:
@@ -131,7 +134,7 @@ class MemcachedStore(Store):
 
         raise TypeError("Wrong type")
 
-    def hset(self, key: str, field: str, value: str) -> int:  # F402
+    def hset(self, key: str, field: str, value: str, ttl: int | None = None) -> int:  # F402
         """See `Store.hset`."""
         payload = self.client.get(key, "{}")
         try:
@@ -141,7 +144,7 @@ class MemcachedStore(Store):
 
         count = 0 if field in data else 1
         data[field] = str(value)
-        self.set(key, json.dumps(data))
+        self.set(key, json.dumps(data), ttl)
         return count
 
     def hdel(self, key, *fields):
@@ -164,10 +167,30 @@ class MemcachedStore(Store):
 
 
 @define(frozen=True)
+class MemoryRecord:
+
+    data: str | dict[str, str]
+    expires: float
+
+    @classmethod
+    def from_ttl(cls, data, ttl=None):
+        expires = float('inf') if ttl is None else time() + ttl
+        return cls(data, expires)
+
+    @property
+    def expired(self):
+        return self.expires < time()
+
+    @property
+    def is_dict(self):
+        return isinstance(self.data, dict)
+
+
+@define(frozen=True)
 class MemoryStore(Store):
     """Memory implementation of a store."""
 
-    data: dict[str, str | dict[str, str]] = field(factory=dict)
+    records : dict[str, MemoryRecord] = field(factory=dict)
 
     @classmethod
     def from_url(cls, url: URL | str) -> "MemoryStore":
@@ -176,18 +199,23 @@ class MemoryStore(Store):
     def get(self, key: str) -> str:
         """See `Store.get`."""
         try:
-            value = self.data[key]
+            record = self.records[key]
         except KeyError:
             return None
 
-        if isinstance(value, dict):
+        if record.expired:
+            self.delete(key)
+            return None
+
+        if record.is_dict:
             raise TypeError("Wrong type")
 
-        return value
+        return record.data
 
-    def set(self, key: str, value: str) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
         """See `Store.set`."""
-        self.data[key] = str(value)
+        record = MemoryRecord.from_ttl(str(value), ttl)
+        self.records[key] = record
         return True
 
     def delete(self, *keys: str) -> int:
@@ -195,7 +223,7 @@ class MemoryStore(Store):
         count = 0
         for key in keys:
             with suppress(KeyError):
-                del self.data[key]
+                del self.records[key]
                 count += 1
 
         return count
@@ -203,23 +231,40 @@ class MemoryStore(Store):
     def hget(self, key: str, field: str) -> str:
         """See `Store.hget`."""
         try:
-            return self.data.get(key, {}).get(field)
-        except AttributeError as e:
-            raise TypeError(str(e)) from e
+            record = self.records[key]
+        except KeyError:
+            return None
+
+        if record.expired:
+            self.delete(key)
+            return None
+
+        if not record.is_dict:
+            raise TypeError("Wrong type")
+
+        return record.data.get(field)
 
     def hgetall(self, key: str) -> str:
         """See `Store.hgetall`."""
-        value = self.data.get(key, {})
-        if not isinstance(value, dict):
+        try:
+            record = self.records[key]
+        except KeyError:
+            return {}
+
+        if record.expired:
+            self.delete(key)
+            return None
+
+        if not record.is_dict:
             raise TypeError("Wrong type")
 
-        return value
+        return record.data
 
-    def hset(self, key: str, field: str, value: str) -> int:  # F402
+    def hset(self, key: str, field: str, value: str, ttl: int | None = None) -> int:  # F402
         """See `Store.hset`."""
-        data = self.data.setdefault(key, {})
-        count = 0 if field in data else 1
-        data[field] = str(value)
+        record = self.records.setdefault(key, MemoryRecord.from_ttl({}, ttl))
+        count = 0 if field in record.data else 1
+        record.data[field] = str(value)
         return count
 
     def hdel(self, key, *fields):
@@ -235,7 +280,7 @@ class MemoryStore(Store):
 
     def flushall(self):
         """See `Store.flushall`."""
-        self.data.clear()
+        self.records.clear()
 
 
 def wrap_response_error(func):
@@ -278,7 +323,16 @@ class RedisStore(StrictRedis, Store):
         url = URL(url)
         return cls.from_host(url.host, url.port, password=url.password)
 
+    def hset(self, key: str, field: str, value: str, ttl: int | None = None) -> int:  # F402
+        """See `Store.hset`."""
+        ret = self._hset(key, field, value)
+        if ttl is not None:
+            self._hexpire(key, ttl, field)
+
+        return ret
+
     get = wrap_response_error(StrictRedis.get)
     hget = wrap_response_error(StrictRedis.hget)
     hgetall = wrap_response_error(StrictRedis.hgetall)
-    hset = wrap_response_error(StrictRedis.hset)
+    _hset = wrap_response_error(StrictRedis.hset)
+    _hexpire = wrap_response_error(StrictRedis.hexpire)
