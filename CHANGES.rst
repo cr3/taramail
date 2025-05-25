@@ -1,3 +1,12 @@
+Version 0.3.0
+-------------
+
+Released 2025-05-30
+
+-   Move Acme service to taramux.
+-   Move DynDNS service to taramux.
+-   Move IPv6 to taramux
+
 Version 0.2.0
 -------------
 

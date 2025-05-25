@@ -2,7 +2,6 @@
 
 import logging
 import os
-from subprocess import check_call
 from unittest.mock import patch
 
 import pytest
@@ -46,12 +45,3 @@ def logger_handler():
         yield handler
     finally:
         setup_logger()
-
-
-@pytest.fixture(scope="session")
-def ssl_dir(request, env_file):
-    """Fixture to get the SSL directory."""
-    backend_root = request.config.rootpath
-    project_root = backend_root.parent
-    check_call(["make", "-C", project_root, f"ENV={env_file}", "ssl"])  # noqa: S603, S607
-    return project_root / "ssl"

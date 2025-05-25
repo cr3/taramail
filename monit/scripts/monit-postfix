@@ -5,7 +5,4 @@ err_count=0
 /usr/lib/nagios/plugins/check_smtp -4 -H postfix -p 589 -f "monit@invalid" -C "RCPT TO:monit@localhost" -C DATA -C . -R 250
 err_count=$(( ${err_count} + $? ))
 
-/usr/lib/nagios/plugins/check_smtp -4 -H postfix -p 589 -S
-err_count=$(( ${err_count} + $? ))
-
 exit $err_count

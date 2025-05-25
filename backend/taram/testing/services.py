@@ -111,7 +111,7 @@ def dockerapi_session(dockerapi_service):
 
 
 @pytest.fixture(scope="session")
-def dovecot_service(compose_server, ssl_dir):
+def dovecot_service(compose_server):
     """Dovecot service fixture."""
     server = compose_server("dovecot entered RUNNING state")
     with server.run("dovecot") as service:

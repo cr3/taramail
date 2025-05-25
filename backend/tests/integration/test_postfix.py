@@ -3,7 +3,7 @@
 import socket
 
 
-def get_postfix_banner(server, port=589):
+def get_postfix_banner(server, port=25):
     """Get the banner from Postfix."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(5)
