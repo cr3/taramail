@@ -75,7 +75,7 @@ services:
     build: backend
     command: >
       bash -c "alembic upgrade head
-      && uvicorn --host=0.0.0.0 --port=80 taram.api:app"
+      && uvicorn --host=0.0.0.0 --port=80 taram.api:app --log-config=/app/log-config.yaml"
     restart: always
     depends_on:
       - dockerapi
@@ -389,7 +389,7 @@ services:
 
   dockerapi:
     build: backend
-    command: uvicorn --host=0.0.0.0 --port=80 taram.dockerapi:app
+    command: uvicorn --host=0.0.0.0 --port=80 taram.dockerapi:app --log-config=/app/log-config.yaml
     security_opt:
       - label=disable
     restart: always

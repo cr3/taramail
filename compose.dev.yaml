@@ -7,3 +7,17 @@ services:
       target: dev
     environment:
       NODE_ENV: development
+
+  api:
+    command: >
+      bash -c "alembic upgrade head
+      && uvicorn --host=0.0.0.0 --port=80 taram.api:app --log-config=/app/log-config.dev.yaml --reload"
+    volumes:
+      - ./backend/taram:/app/taram
+
+  dockerapi:
+    command: uvicorn --host=0.0.0.0 --port=80 taram.dockerapi:app --reload
+    environment:
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./backend/taram:/app/taram
