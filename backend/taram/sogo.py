@@ -4,6 +4,7 @@ from functools import partial
 
 from attrs import define, field
 from sqlalchemy import insert, select
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.sql import case, func
 
 from taram.db import DBSession
@@ -83,24 +84,51 @@ class Sogo:
         else:
             select_stmt = select_stmt.group_by(MailboxModel.username)
 
-        insert_stmt = insert(SogoStaticView).from_select(
-            [
-                "c_uid",
-                "domain",
-                "c_name",
-                "c_password",
-                "c_cn",
-                "mail",
-                "aliases",
-                "ad_aliases",
-                "ext_acl",
-                "kind",
-                "multiple_bookings",
-            ],
-            select_stmt,
-        )
+        dialect = self.db.connection().dialect.name
+        if dialect == "sqlite":
+            upsert_stmt = insert(SogoStaticView).from_select(
+                [
+                    "c_uid",
+                    "domain",
+                    "c_name",
+                    "c_password",
+                    "c_cn",
+                    "mail",
+                    "aliases",
+                    "ad_aliases",
+                    "ext_acl",
+                    "kind",
+                    "multiple_bookings",
+                ],
+                select_stmt,
+            ).prefix_with('OR REPLACE')
+        elif dialect == "mysql":
+            insert_stmt = mysql_insert(SogoStaticView).from_select(
+                [
+                    "c_uid",
+                    "domain",
+                    "c_name",
+                    "c_password",
+                    "c_cn",
+                    "mail",
+                    "aliases",
+                    "ad_aliases",
+                    "ext_acl",
+                    "kind",
+                    "multiple_bookings",
+                ],
+                select_stmt,
+            )
+            update_dict = {
+                col.name: insert_stmt.inserted[col.name]
+                for col in SogoStaticView.__table__.columns
+                if not col.primary_key  # Usually you don't update primary keys
+            }
+            upsert_stmt = insert_stmt.on_duplicate_key_update(**update_dict)
+        else:
+            raise Exception(f"Unsupported dialect: {dialect}")
 
-        self.db.execute(insert_stmt)
+        self.db.execute(upsert_stmt)
 
         self.db.query(SogoStaticView).filter(
             SogoStaticView.c_uid.not_in(select(MailboxModel.username).filter_by(active=True))
