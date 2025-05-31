@@ -2,7 +2,7 @@
 
 import pytest
 
-from taram.queue import QueueEmpty
+from taramail.queue import QueueEmpty
 
 
 def test_queue_send_receive(queue, unique):

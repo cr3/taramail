@@ -1,6 +1,5 @@
 """Testing models."""
 
-
 from sqlalchemy import (
     Text,
 )
@@ -11,7 +10,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql.schema import ForeignKey, ForeignKeyConstraint
 
-from taram.models import SQLModel
+from taramail.models import SQLModel
 
 
 class NotNullableTest(SQLModel):

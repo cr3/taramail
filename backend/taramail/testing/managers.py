@@ -4,9 +4,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from taram.domain import DomainManager
-from taram.mailbox import MailboxManager
-from taram.sogo import Sogo
+from taramail.domain import DomainManager
+from taramail.mailbox import MailboxManager
+from taramail.sogo import Sogo
 
 
 @pytest.fixture

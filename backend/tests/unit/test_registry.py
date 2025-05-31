@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-import taram.registry
-from taram.registry import (
+import taramail.registry
+from taramail.registry import (
     registry_add,
     registry_get,
     registry_load,
@@ -17,25 +17,25 @@ from taram.registry import (
 def test_registry_load():
     """Entry points should be loaded into a registry dictionary."""
     with patch.object(
-        taram.registry,
+        taramail.registry,
         "get_entry_points",
     ) as mock_entry_points:
         mock_entry_points.return_value = iter([
-            EntryPoint("registry", "taram.registry", "taram.group"),
+            EntryPoint("registry", "taramail.registry", "taramail.group"),
         ])
         registry = registry_load("group")
         assert "registry" in registry["group"]
-        assert registry["group"]["registry"] == taram.registry
+        assert registry["group"]["registry"] == taramail.registry
 
 
 def test_registry_load_ignore():
     """Entry points that fail to load should be ignored."""
     with patch.object(
-        taram.registry,
+        taramail.registry,
         "get_entry_points",
     ) as mock_entry_points:
         mock_entry_points.return_value = iter([
-            EntryPoint("error", "taram.registry", "taram.group"),
+            EntryPoint("error", "taramail.registry", "taramail.group"),
         ])
         registry = registry_load("group")
         assert "test" not in registry
@@ -94,7 +94,7 @@ def test_registry_get_error():
 @pytest.mark.parametrize(
     "group,name",
     [
-        ("taram_store", "memory"),
+        ("taramail_store", "memory"),
     ],
 )
 def test_registry_get_setup(group, name):

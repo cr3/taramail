@@ -1,6 +1,6 @@
 """Unit tests for the password module."""
 
-from taram.password import (
+from taramail.password import (
     hash_password,
     verify_password,
 )

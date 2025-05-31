@@ -29,7 +29,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.schema import FetchedValue
 from sqlalchemy.sql import func
 
-from taram.units import gibi
+from taramail.units import gibi
 
 SQLModel = declarative_base()
 

@@ -5,7 +5,8 @@ Released 2025-05-30
 
 -   Move Acme service to taramux.
 -   Move DynDNS service to taramux.
--   Move IPv6 to taramux
+-   Move IPv6 to taramux.
+-   Rename project to taramail.
 
 Version 0.2.0
 -------------

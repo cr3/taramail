@@ -13,7 +13,7 @@ from redis import StrictRedis
 from redis.exceptions import ResponseError
 from yarl import URL
 
-from taram.registry import registry_load
+from taramail.registry import registry_load
 
 
 @define
@@ -22,9 +22,9 @@ class Store(ABC):
     @classmethod
     def from_url(cls, url: URL | str, registry=None) -> "Store":
         if registry is None:
-            registry = registry_load("taram_store")
+            registry = registry_load("taramail_store")
         scheme = URL(url).scheme
-        storage_cls = registry["taram_store"][scheme]
+        storage_cls = registry["taramail_store"][scheme]
         return storage_cls.from_url(url)
 
     @abstractmethod

@@ -16,7 +16,7 @@ from hamcrest import (
     matches_regexp,
 )
 
-from taram.logger import (
+from taramail.logger import (
     JsonFormatter,
     LoggerFormatter,
     LoggerHandlerAction,

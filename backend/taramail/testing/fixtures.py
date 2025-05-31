@@ -7,15 +7,15 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from taram.api import (
+from taramail.api import (
     app,
     get_db,
     get_memcached,
     get_queue,
     get_store,
 )
-from taram.logger import setup_logger
-from taram.testing.logger import LoggerHandler
+from taramail.logger import setup_logger
+from taramail.testing.logger import LoggerHandler
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ from attrs import define, field
 from redis import StrictRedis
 from yarl import URL
 
-from taram.registry import registry_load
+from taramail.registry import registry_load
 
 
 class QueueEmpty(Exception):
@@ -24,9 +24,9 @@ class Queue(ABC):
     @classmethod
     def from_url(cls, url: URL | str, registry=None) -> "Queue":
         if registry is None:
-            registry = registry_load("taram_queue")
+            registry = registry_load("taramail_queue")
         scheme = URL(url).scheme
-        queue_cls = registry["taram_queue"][scheme]
+        queue_cls = registry["taramail_queue"][scheme]
         return queue_cls.from_url(url)
 
     @abstractmethod

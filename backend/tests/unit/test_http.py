@@ -3,7 +3,7 @@
 import pytest
 import responses
 
-from taram.http import (
+from taramail.http import (
     HTTP_METHODS,
     HTTPSession,
 )

@@ -14,18 +14,18 @@ from fastapi import (
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 
-from taram.db import (
+from taramail.db import (
     DBSession,
     db_transaction,
     get_db_session,
 )
-from taram.domain import DomainManager
-from taram.mailbox import MailboxManager
-from taram.queue import (
+from taramail.domain import DomainManager
+from taramail.mailbox import MailboxManager
+from taramail.queue import (
     Queue,
     RedisQueue,
 )
-from taram.schemas import (
+from taramail.schemas import (
     DomainCreate,
     DomainDetails,
     DomainUpdate,
@@ -33,8 +33,8 @@ from taram.schemas import (
     MailboxDetails,
     MailboxUpdate,
 )
-from taram.sogo import Sogo
-from taram.store import (
+from taramail.sogo import Sogo
+from taramail.store import (
     MemcachedStore,
     RedisStore,
     Store,

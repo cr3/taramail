@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 
 from alembic import op
-from taram.views import (
+from taramail.views import (
     SieveAfterView,
     SieveBeforeView,
 )

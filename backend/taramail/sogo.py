@@ -7,8 +7,8 @@ from sqlalchemy import insert, select
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.sql import case, func
 
-from taram.db import DBSession
-from taram.models import (
+from taramail.db import DBSession
+from taramail.models import (
     MailboxModel,
     SogoAclModel,
     SogoCacheFolderModel,
@@ -20,11 +20,11 @@ from taram.models import (
     SogoUserProfileModel,
     UserAttributesModel,
 )
-from taram.store import (
+from taramail.store import (
     MemcachedStore,
     Store,
 )
-from taram.views import (
+from taramail.views import (
     GroupedDomainAliasAddressView,
     GroupedMailAliasesView,
     GroupedSenderAclExternalView,

@@ -3,7 +3,7 @@
 import pytest
 from yarl import URL
 
-from taram.store import Store
+from taramail.store import Store
 
 
 @pytest.fixture

@@ -20,15 +20,15 @@ from attrs import define, field
 from more_itertools import partition
 from nftables import Nftables
 
-from taram.logger import (
+from taramail.logger import (
     LoggerHandlerAction,
     LoggerLevelAction,
     setup_logger,
 )
-from taram.queue import (
+from taramail.queue import (
     RedisQueue,
 )
-from taram.store import (
+from taramail.store import (
     RedisStore,
 )
 
@@ -963,7 +963,7 @@ def main(argv=None):  # pragma: no cover
 
     netfilter.ipv4_tables.insert_mail_chains()
     netfilter.ipv6_tables.insert_mail_chains()
-    netfilter.ipv4_tables.create_isolation_rule("br-mail", [6379])
+    netfilter.ipv4_tables.create_isolation_rule("br-taramail", [6379])
 
     watch_thread = Thread(target=service.watch)
     watch_thread.daemon = True

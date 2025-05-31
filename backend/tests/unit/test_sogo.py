@@ -4,13 +4,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from taram.models import (
+from taramail.models import (
     AliasDomainModel,
     MailboxModel,
     SogoStaticView,
     UserAttributesModel,
 )
-from taram.sogo import Sogo
+from taramail.sogo import Sogo
 
 
 @pytest.mark.parametrize(

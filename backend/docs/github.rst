@@ -26,7 +26,7 @@ appending the public key to the authorized keys on the server:
 Then, configure the repository secrets with the private key and other
 details about the server:
 
-* SSH_PRIVATE_KEY: content of the `taram_rsa` file
+* SSH_PRIVATE_KEY: content of the `taramail_rsa` file
 * SSH_USER: user name to access the server
 * SSH_HOST: hostname/ip-address of your server
 * WORK_DIR: path to the directory containing the repository

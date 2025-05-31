@@ -9,7 +9,7 @@ Create Date: 2025-02-01 21:19:15.965541
 from collections.abc import Sequence
 
 from alembic import op
-from taram.views import (
+from taramail.views import (
     GroupedDomainAliasAddressView,
     GroupedMailAliasesView,
     GroupedSenderAclExternalView,

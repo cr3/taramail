@@ -6,7 +6,7 @@ from hamcrest import (
     has_item,
 )
 
-from taram.models import (
+from taramail.models import (
     DomainModel,
     MailboxModel,
 )

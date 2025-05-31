@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from taram.http import HTTPSession
-from taram.testing.compose import ComposeServer
+from taramail.http import HTTPSession
+from taramail.testing.compose import ComposeServer
 
 
 @pytest.fixture(scope="session")

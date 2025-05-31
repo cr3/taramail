@@ -11,13 +11,13 @@ services:
   api:
     command: >
       bash -c "alembic upgrade head
-      && uvicorn --host=0.0.0.0 --port=80 taram.api:app --log-config=/app/log-config.dev.yaml --reload"
+      && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.dev.yaml --reload"
     volumes:
-      - ./backend/taram:/app/taram
+      - ./backend/taramail:/app/taramail
 
   dockerapi:
-    command: uvicorn --host=0.0.0.0 --port=80 taram.dockerapi:app --reload
+    command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --reload
     environment:
       - LOG_LEVEL=DEBUG
     volumes:
-      - ./backend/taram:/app/taram
+      - ./backend/taramail:/app/taramail

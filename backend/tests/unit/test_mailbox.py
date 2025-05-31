@@ -2,7 +2,7 @@
 
 import pytest
 
-from taram.schemas import (
+from taramail.schemas import (
     DomainCreate,
     MailboxCreate,
     MailboxUpdate,

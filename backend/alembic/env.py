@@ -1,8 +1,8 @@
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from taram.db import get_db_url
-from taram.models import SQLModel
+from taramail.db import get_db_url
+from taramail.models import SQLModel
 
 config = context.config
 

@@ -19,16 +19,16 @@ of source files:
 
 Then, that logger is used inside functions and methods to log messages:
 
-    >>> from taram.testing.logger import logger_time
+    >>> from taramail.testing.logger import logger_time
     >>> with logger_time():
     ...     log.info('created %(user)s', {'user': 'x'})
-    1970-01-01 00:00:00.000000 INFO    taram.logger created x
+    1970-01-01 00:00:00.000000 INFO    taramail.logger created x
 
 It is also possible to add structured context information to the messages:
 
     >>> with logger_context({'lambda': 'x'}), logger_time():
     ...     log.warning('message')
-    1970-01-01 00:00:00.000000 WARNING taram.logger [{"lambda": "x"}] message
+    1970-01-01 00:00:00.000000 WARNING taramail.logger [{"lambda": "x"}] message
 
 The LoggerLevelAction provides argument defaults for the log level:
 

@@ -5,14 +5,14 @@ services:
       - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
     restart: always
     networks:
-      mail-network:
+      network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
 
   memcached:
     image: memcached:alpine
     restart: always
     networks:
-      mail-network:
+      network:
         aliases:
           - memcached
 
@@ -36,7 +36,7 @@ services:
     ports:
       - "${SQL_PORT:-127.0.0.1:13306}:3306"
     networks:
-      - mail-network
+      - network
 
   redis:
     image: redis:7-alpine
@@ -53,7 +53,7 @@ services:
     sysctls:
       - net.core.somaxconn=4096
     networks:
-      mail-network:
+      network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
 
   frontend:
@@ -64,13 +64,13 @@ services:
       - "${FRONTEND_PORT:-127.0.0.1:3000}:3000"
     restart: always
     networks:
-      - mail-network
+      - network
 
   api:
     build: backend
     command: >
       bash -c "alembic upgrade head
-      && uvicorn --host=0.0.0.0 --port=80 taram.api:app --log-config=/app/log-config.yaml"
+      && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
     depends_on:
       - dockerapi
@@ -90,7 +90,7 @@ services:
     volumes:
       - mysql-socket-vol-1:/var/run/mysqld/
     networks:
-      - mail-network
+      - network
 
   clamd:
     image: clamav/clamav:1.4.1
@@ -104,7 +104,7 @@ services:
       - ./clamd/freshclam.conf:/etc/clamav/freshclam.conf:ro,Z
       - clamd-vol-1:/var/lib/clamav
     networks:
-      - mail-network
+      - network
 
   rspamd:
     build: rspamd
@@ -126,7 +126,7 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     networks:
-      - mail-network
+      - network
 
   postfix:
     build: postfix
@@ -157,7 +157,7 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     networks:
-      mail-network:
+      network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.253
 
   dovecot:
@@ -200,7 +200,7 @@ services:
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
-      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taram}
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taramail}
       - FLATCURVE_EXPERIMENTAL=${FLATCURVE_EXPERIMENTAL:-n}
     ports:
       - "${DOVEADM_PORT:-127.0.0.1:19991}:12345"
@@ -236,7 +236,7 @@ services:
         soft: 20000
         hard: 40000
     networks:
-      mail-network:
+      network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.250
 
   sogo:
@@ -279,7 +279,7 @@ services:
       ofelia.job-exec.sogo_backup.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool backup /sogo_backup ALL || exit 0\""
     restart: always
     networks:
-      mail-network:
+      network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.248
 
   nginx:
@@ -311,7 +311,7 @@ services:
       - "${HTTP_BIND:-}:${HTTP_PORT:-80}:${HTTP_PORT:-80}"
     restart: always
     networks:
-      - mail-network
+      - network
 
   netfilter:
     build: backend
@@ -334,18 +334,18 @@ services:
 
   dockerapi:
     build: backend
-    command: uvicorn --host=0.0.0.0 --port=80 taram.dockerapi:app --log-config=/app/log-config.yaml
+    command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --log-config=/app/log-config.yaml
     security_opt:
       - label=disable
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     environment:
-      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taram}
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taramail}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - mail-network
+      - network
 
   monit:
     build: monit
@@ -366,13 +366,13 @@ services:
       - DBPASS=${DBPASS}
       - REDISPASS=${REDISPASS}
     networks:
-      - mail-network
+      - network
 
 networks:
-  mail-network:
+  network:
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.name: br-mail
+      com.docker.network.bridge.name: br-taramail
     ipam:
       driver: default
       config:

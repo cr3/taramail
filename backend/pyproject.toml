@@ -1,14 +1,14 @@
 [project]
-name = "taram"
+name = "taramail"
 version = "0.0.0"
 description = "Communauté de Notre-Dame-du-Laus"
 authors = [
     {name = "Marc Tardif", email = "marc@interunion.ca"},
 ]
 readme = "README.rst"
-repository = "https://github.com/cr3/taram"
+repository = "https://github.com/cr3/taramail"
 packages = [
-    {include = "taram"},
+    {include = "taramail"},
 ]
 requires-python = ">=3.11,<4.0"
 dependencies = [
@@ -58,30 +58,30 @@ sphinxcontrib-log-cabinet = "^1.0.1"
 sphinx-rtd-theme = "^1.2.0"
 
 [project.entry-points."pytest11"]
-taram = "taram.testing.fixtures"
-taram-db = "taram.testing.db"
-taram-managers = "taram.testing.managers"
-taram-services = "taram.testing.services"
-taram-queue = "taram.testing.queue"
-taram-store = "taram.testing.store"
+taramail = "taramail.testing.fixtures"
+taramail-db = "taramail.testing.db"
+taramail-managers = "taramail.testing.managers"
+taramail-services = "taramail.testing.services"
+taramail-queue = "taramail.testing.queue"
+taramail-store = "taramail.testing.store"
 
 [project.entry-points."pytest_unique"]
-db-model = "taram.testing.unique:unique_db_model"
-db-value = "taram.testing.unique:unique_db_value"
-domain = "taram.testing.unique:unique_domain"
+db-model = "taramail.testing.unique:unique_db_model"
+db-value = "taramail.testing.unique:unique_db_value"
+domain = "taramail.testing.unique:unique_domain"
 
-[project.entry-points."taram_queue"]
-memory = "taram.queue:MemoryQueue"
-redis = "taram.queue:RedisQueue"
+[project.entry-points."taramail_queue"]
+memory = "taramail.queue:MemoryQueue"
+redis = "taramail.queue:RedisQueue"
 
-[project.entry-points."taram_store"]
-memcached = "taram.store:MemcachedStore"
-memory = "taram.store:MemoryStore"
-redis = "taram.store:RedisStore"
+[project.entry-points."taramail_store"]
+memcached = "taramail.store:MemcachedStore"
+memory = "taramail.store:MemoryStore"
+redis = "taramail.store:RedisStore"
 
 [project.scripts]
-netfilter = "taram.netfilter:main"
-taram = "taram.cli:main"
+netfilter = "taramail.netfilter:main"
+taramail = "taramail.cli:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -145,7 +145,7 @@ addopts = [
     "--doctest-glob=*.rst",
 ]
 testpaths = [
-    "taram",
+    "taramail",
     "docs",
     "tests",
 ]
@@ -154,7 +154,7 @@ testpaths = [
 #   https://coverage.readthedocs.io/en/latest/config.html
 [tool.coverage.paths]
 source = [
-    "taram",
+    "taramail",
     "*/*/site-packages",
 ]
 
@@ -166,5 +166,5 @@ show_missing = true
 branch = true
 parallel = true
 source = [
-    "taram",
+    "taramail",
 ]

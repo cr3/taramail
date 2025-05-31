@@ -5,9 +5,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
 
-from taram.db import DBSession
-from taram.http import HTTPSession
-from taram.models import (
+from taramail.db import DBSession
+from taramail.http import HTTPSession
+from taramail.models import (
     AliasDomainModel,
     AliasModel,
     BccMapsModel,
@@ -18,16 +18,16 @@ from taram.models import (
     SenderAclModel,
     SpamaliasModel,
 )
-from taram.schemas import (
+from taramail.schemas import (
     DomainCreate,
     DomainDetails,
     DomainUpdate,
 )
-from taram.store import (
+from taramail.store import (
     RedisStore,
     Store,
 )
-from taram.units import mebi
+from taramail.units import mebi
 
 
 @define(frozen=True)

@@ -1,7 +1,7 @@
-taram
-=====
+taramail
+========
 
 .. toctree::
    :maxdepth: 4
 
-   taram
+   taramail

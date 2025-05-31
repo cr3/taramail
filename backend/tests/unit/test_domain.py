@@ -2,11 +2,11 @@
 
 import pytest
 
-from taram.models import (
+from taramail.models import (
     AliasDomainModel,
     DomainModel,
 )
-from taram.schemas import (
+from taramail.schemas import (
     DomainCreate,
     DomainUpdate,
 )

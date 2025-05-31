@@ -3,10 +3,10 @@ from sqlalchemy import or_
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
 
-from taram.db import (
+from taramail.db import (
     DBSession,
 )
-from taram.models import (
+from taramail.models import (
     AliasModel,
     BccMapsModel,
     DomainModel,
@@ -22,21 +22,21 @@ from taram.models import (
     UserAclModel,
     UserAttributesModel,
 )
-from taram.password import (
+from taramail.password import (
     hash_password,
     validate_passwords,
 )
-from taram.schemas import (
+from taramail.schemas import (
     MailboxCreate,
     MailboxDetails,
     MailboxUpdate,
 )
-from taram.sogo import Sogo
-from taram.store import (
+from taramail.sogo import Sogo
+from taramail.store import (
     RedisStore,
     Store,
 )
-from taram.units import mebi
+from taramail.units import mebi
 
 
 @define(frozen=True)

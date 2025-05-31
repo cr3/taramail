@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from taram.models import SQLModel
+from taramail.models import SQLModel
 
 
 def pytest_addoption(parser):

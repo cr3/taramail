@@ -10,7 +10,7 @@ from hamcrest import (
     has_items,
 )
 
-from taram.netfilter import (
+from taramail.netfilter import (
     Netfilter,
     NetfilterService,
     NetfilterTables,

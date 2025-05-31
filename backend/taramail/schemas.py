@@ -4,7 +4,7 @@ from datetime import datetime as dt
 
 from pydantic import BaseModel
 
-from taram.units import gibi, kebi
+from taramail.units import gibi, kebi
 
 
 class DomainCreate(BaseModel):

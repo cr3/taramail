@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 import responses
 
-from taram.cli import (
+from taramail.cli import (
     API_URL,
     call_api,
     get_arg_type,
@@ -13,7 +13,7 @@ from taram.cli import (
     main,
     make_args_parser,
 )
-from taram.http import HTTPSession
+from taramail.http import HTTPSession
 
 
 @pytest.mark.parametrize(

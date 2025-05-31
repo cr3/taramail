@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy import create_engine
 
-from taram.db import get_db_url
+from taramail.db import get_db_url
 
 
 @pytest.fixture(scope="session")

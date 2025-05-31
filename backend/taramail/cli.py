@@ -14,7 +14,7 @@ from textwrap import dedent
 from lookuper import lookup
 from more_itertools import bucket, only
 
-from taram.http import HTTPSession
+from taramail.http import HTTPSession
 
 DEFAULT_API_URL = "https://taram.ca/api/"
 
@@ -136,7 +136,7 @@ def make_args_parser(schema):
 
 
 def main(argv=None):
-    """Entry point to the taram command-line interface."""
+    """Entry point to the taramail command-line interface."""
     session = HTTPSession.with_origin(API_URL)
     schema = get_openapi_schema(session)
     parser = make_args_parser(schema)

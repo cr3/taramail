@@ -8,7 +8,7 @@ from sqlalchemy_utils.view import (
     create_view,
 )
 
-from taram.models import (
+from taramail.models import (
     AliasDomainModel,
     AliasModel,
     MailboxModel,
