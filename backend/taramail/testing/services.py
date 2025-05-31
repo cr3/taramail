@@ -137,7 +137,7 @@ def memcached_service(compose_server):
 @pytest.fixture(scope="session")
 def mysql_service(compose_server):
     """MySQL service fixture."""
-    server = compose_server("mysqld: ready for connections")
+    server = compose_server("mariadbd: ready for connections")
     with server.run("mysql") as service:
         yield service
 
