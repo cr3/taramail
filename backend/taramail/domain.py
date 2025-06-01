@@ -200,8 +200,10 @@ class DomainManager:
             self.db.query(
                 func.count(AliasModel.id).label("count"),
             )
-            .filter_by(domain=domain)
-            .filter(select(MailboxModel.username).scalar_subquery())
+            .filter(
+                AliasModel.domain == domain,
+                ~AliasModel.address.in_(select(MailboxModel.username)),
+            )
             .one()
         )
 

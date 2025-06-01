@@ -79,7 +79,7 @@ def compose_server(project, env_file, compose_files, process):
 @pytest.fixture(scope="session")
 def api_service(compose_server):
     """API service fixture."""
-    server = compose_server("Uvicorn running on")
+    server = compose_server("Application startup complete")
     with server.run("api") as service:
         yield service
 
@@ -109,7 +109,7 @@ def clamd_service(compose_server):
 @pytest.fixture(scope="session")
 def dockerapi_service(compose_server):
     """Dockerapi service fixture."""
-    server = compose_server("Uvicorn running on")
+    server = compose_server("Application startup complete")
     with server.run("dockerapi") as service:
         yield service
 

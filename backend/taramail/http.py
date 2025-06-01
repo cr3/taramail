@@ -22,6 +22,13 @@ class HTTPSession(Session):
         self.origin = origin
         self.timeout = timeout
 
+    def __repr__(self):
+        return "{cls}(origin={origin!r}, timeout={timeout})".format(
+            cls=self.__class__.__name__,
+            origin=self.origin,
+            timeout=self.timeout,
+        )
+
     @classmethod
     def with_origin(cls, origin: str):
         """Make sure the origin has a single trailing slash."""
