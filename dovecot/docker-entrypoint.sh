@@ -245,6 +245,8 @@ sed -i "s/__DBNAME__/${DBNAME}/g" /etc/dovecot/lua/passwd-verify.lua
 sed -i "s/__IPV4_SOGO__/${IPV4_NETWORK}.248/g" /etc/dovecot/lua/passwd-verify.lua
 
 
+# Migrate old sieve_after file
+[[ -f /etc/dovecot/sieve_after ]] && mv /etc/dovecot/sieve_after /etc/dovecot/global_sieve_after
 # Create global sieve scripts
 cat /etc/dovecot/global_sieve_after > /var/vmail/sieve/global_sieve_after.sieve
 cat /etc/dovecot/global_sieve_before > /var/vmail/sieve/global_sieve_before.sieve
@@ -256,9 +258,24 @@ if [[ $(stat -c %U /var/vmail/_garbage) != "vmail" ]] ; then chown -R vmail:vmai
 if [[ $(stat -c %U /var/vmail_index) != "vmail" ]] ; then chown -R vmail:vmail /var/vmail_index ; fi
 
 # Cleanup random user maildirs
-rm -rf /var/vmail/mail.local/*
+rm -rf /var/vmail/taramail.local/*
 # Cleanup PIDs
 [[ -f /tmp/quarantine_notify.pid ]] && rm /tmp/quarantine_notify.pid
+
+# create sni configuration
+echo "" > /etc/dovecot/sni.conf
+for cert_dir in /etc/letsencrypt/live/*/ ; do
+  if [[ ! -f ${cert_dir}domains ]] || [[ ! -f ${cert_dir}fullchain.pem ]] || [[ ! -f ${cert_dir}privkey.pem ]]; then
+    continue
+  fi
+  domains=($(cat ${cert_dir}domains))
+  for domain in ${domains[@]}; do
+    echo 'local_name '${domain}' {' >> /etc/dovecot/sni.conf;
+    echo '  ssl_cert = <'${cert_dir}'fullchain.pem' >> /etc/dovecot/sni.conf;
+    echo '  ssl_key = <'${cert_dir}'privkey.pem' >> /etc/dovecot/sni.conf;
+    echo '}' >> /etc/dovecot/sni.conf;
+  done
+done
 
 # Create random master for SOGo sieve features
 RAND_USER=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 16 | head -n 1)
@@ -329,11 +346,22 @@ fi
 
 # 401 is user dovecot
 if [[ ! -s /mail_crypt/ecprivkey.pem || ! -s /mail_crypt/ecpubkey.pem ]]; then
-       openssl ecparam -name prime256v1 -genkey | openssl pkey -out /mail_crypt/ecprivkey.pem
-       openssl pkey -in /mail_crypt/ecprivkey.pem -pubout -out /mail_crypt/ecpubkey.pem
-       chown 401 /mail_crypt/ecprivkey.pem /mail_crypt/ecpubkey.pem
+	openssl ecparam -name prime256v1 -genkey | openssl pkey -out /mail_crypt/ecprivkey.pem
+	openssl pkey -in /mail_crypt/ecprivkey.pem -pubout -out /mail_crypt/ecpubkey.pem
+	chown 401 /mail_crypt/ecprivkey.pem /mail_crypt/ecpubkey.pem
 else
-       chown 401 /mail_crypt/ecprivkey.pem /mail_crypt/ecpubkey.pem
+	chown 401 /mail_crypt/ecprivkey.pem /mail_crypt/ecpubkey.pem
+fi
+
+# Fix OpenSSL 3.X TLS1.0, 1.1 support (https://community.mailcow.email/d/4062-hi-all/20)
+if grep -qE 'ssl_min_protocol\s*=\s*(TLSv1|TLSv1\.1)\s*$' /etc/dovecot/dovecot.conf /etc/dovecot/extra.conf; then
+    sed -i '/\[openssl_init\]/a ssl_conf = ssl_configuration' /etc/ssl/openssl.cnf
+
+    echo "[ssl_configuration]" >> /etc/ssl/openssl.cnf
+    echo "system_default = tls_system_default" >> /etc/ssl/openssl.cnf
+    echo "[tls_system_default]" >> /etc/ssl/openssl.cnf
+    echo "MinProtocol = TLSv1" >> /etc/ssl/openssl.cnf
+    echo "CipherString = DEFAULT@SECLEVEL=0" >> /etc/ssl/openssl.cnf
 fi
 
 # Compile sieve scripts

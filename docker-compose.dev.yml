@@ -2,6 +2,17 @@ services:
   memcached:
     command: memcached -vv
 
+  certbot:
+    image: certbot/certbot
+    command: >
+      sh -c "trap exit TERM;
+      /generate-cert.sh;
+      /deploy-hook.sh;
+      echo Ready;
+      sleep infinity"
+    volumes:
+      - ./certbot/generate-cert.sh:/generate-cert.sh:ro
+
   frontend:
     build:
       target: dev

@@ -55,7 +55,9 @@ def compose_files(request):
         for filename in filenames:
             path = directory / filename
             if path.exists():
-                return list(directory.glob(f"{path.stem}.*"))
+                all_files = directory.glob(f"{path.stem}.*")
+                ordered_files = sorted(all_files, key=lambda p: len(p.name))
+                return list(ordered_files)
 
         if directory == directory.parent:
             raise KeyError("Docker compose file not found")
@@ -89,6 +91,14 @@ def api_session(api_service):
 
 
 @pytest.fixture(scope="session")
+def certbot_service(compose_server):
+    """Certbot service fixture."""
+    server = compose_server("Ready")
+    with server.run("certbot") as service:
+        yield service
+
+
+@pytest.fixture(scope="session")
 def clamd_service(compose_server):
     """Clamd service fixture."""
     server = compose_server("socket found, clamd started")
@@ -111,7 +121,7 @@ def dockerapi_session(dockerapi_service):
 
 
 @pytest.fixture(scope="session")
-def dovecot_service(compose_server):
+def dovecot_service(compose_server, certbot_service):
     """Dovecot service fixture."""
     server = compose_server("dovecot entered RUNNING state")
     with server.run("dovecot") as service:
