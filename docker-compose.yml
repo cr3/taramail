@@ -30,7 +30,7 @@ services:
     volumes:
       - ./mysql/conf.d/:/etc/mysql/conf.d/:ro,Z
       - mysql-vol-1:/var/lib/mysql/
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
     environment:
       - MYSQL_ROOT_PASSWORD=${DBROOT}
       - MYSQL_DATABASE=${DBNAME}
@@ -83,7 +83,7 @@ services:
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
     volumes:
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
     networks:
       - network
 
@@ -143,7 +143,7 @@ services:
       - certbot-certs:/etc/letsencrypt:ro,z
       - postfix-vol-1:/var/spool/postfix
       - rspamd-vol-1:/var/lib/rspamd
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
     cap_add:
       - NET_BIND_SERVICE
     ports:
@@ -177,7 +177,7 @@ services:
       - crypt-vol-1:/mail_crypt/
       - ./rspamd/custom/:/etc/rspamd/custom:z
       - rspamd-vol-1:/var/lib/rspamd
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
     environment:
       - DOVECOT_MASTER_USER=${DOVECOT_MASTER_USER:-}
       - DOVECOT_MASTER_PASS=${DOVECOT_MASTER_PASS:-}
@@ -262,7 +262,7 @@ services:
       - ./sogo/conf/:/etc/sogo/:z
       - ./sogo/sogo.ico:/usr/lib/GNUstep/SOGo/WebServerResources/img/sogo.ico:z
       - ./sogo/theme.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/theme.js:z
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
       - sogo-web-vol-1:/sogo_web
       - sogo-userdata-backup-vol-1:/sogo_backup
     labels:
@@ -377,7 +377,7 @@ services:
       - "${MONIT_PORT:-127.0.0.1:2812}:2812"
     volumes:
       - rspamd-vol-1:/var/lib/rspamd
-      - mysql-socket-vol-1:/var/run/mysqld/
+      - mysql-socket-vol-1:/run/mysqld/
     environment:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
