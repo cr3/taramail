@@ -43,7 +43,6 @@ location ~ ^/(fonts|js|css|img)/ {
 
 error_log  /var/log/nginx/error.log;
 access_log /var/log/nginx/access.log;
-fastcgi_hide_header X-Powered-By;
 absolute_redirect off;
 root /web;
 
@@ -60,56 +59,8 @@ real_ip_header proxy_protocol;
 {% endif %}
 real_ip_recursive on;
 
-location ^~ /.well-known/acme-challenge/ {
-    allow all;
-    default_type "text/plain";
-}
-
 rewrite ^/.well-known/caldav$ /SOGo/dav/ permanent;
 rewrite ^/.well-known/carddav$ /SOGo/dav/ permanent;
-
-location / {
-    proxy_pass http://frontend:3000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /api/ {
-    proxy_pass       http://api/;
-    proxy_set_header Host      $http_host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_redirect off;
-}
-
-location /monit/ {
-    proxy_pass       http://monit:2812/;
-    proxy_set_header Host      $http_host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_redirect off;
-}
-
-location /rspamd/ {
-    location /rspamd/auth {
-      # proxy_pass is not inherited
-      proxy_pass       http://rspamd:11334/auth;
-      proxy_intercept_errors on;
-      proxy_set_header Host      $http_host;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_redirect off;
-      error_page 401 /api/rspamd/error;
-    }
-
-    proxy_pass       http://rspamd:11334/;
-    proxy_set_header Host      $http_host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_redirect off;
-}
 
 location ^~ /principals {
     return 301 /SOGo/dav;
@@ -201,6 +152,10 @@ location ^~ /SOGo {
     break;
 }
 
+location / {
+    return 301 $client_req_scheme://$http_host/SOGo;
+}
+
 location ~* /sogo$ {
     return 301 $client_req_scheme://$http_host/SOGo;
 }
@@ -221,15 +176,4 @@ location (^/SOGo/so/ControlPanel/Products/[^/]*UI/Resources/.*\.(jpg|png|gif|css
     alias /usr/lib/GNUstep/SOGo/$1.SOGo/Resources/$2;
 }
 
-
 include /etc/nginx/conf.d/site.*.custom;
-
-error_page 502 @awaitingupstream;
-
-location @awaitingupstream {
-    rewrite ^(.*)$ /_status.502.html break;
-}
-
-location ~* \.php$ {
-    return 404;
-}

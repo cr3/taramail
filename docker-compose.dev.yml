@@ -13,12 +13,6 @@ services:
     volumes:
       - ./certbot/generate-cert.sh:/generate-cert.sh:ro
 
-  frontend:
-    build:
-      target: dev
-    environment:
-      NODE_ENV: development
-
   api:
     command: >
       bash -c "alembic upgrade head

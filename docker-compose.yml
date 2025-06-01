@@ -61,16 +61,6 @@ services:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
 
-  frontend:
-    build:
-      context: frontend
-      target: prod
-    ports:
-      - "${FRONTEND_PORT:-127.0.0.1:3000}:3000"
-    restart: always
-    networks:
-      - network
-
   api:
     build: backend
     command: >
@@ -295,7 +285,6 @@ services:
     depends_on:
       - redis
       - api
-      - frontend
       - sogo
       - rspamd
     dns:

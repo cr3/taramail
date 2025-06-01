@@ -4,6 +4,7 @@ Version 0.3.0
 Released 2025-05-30
 
 -   Move IPv6 to taramux.
+-   Move frontend to taram.
 -   Rename project to taramail.
 
 Version 0.2.0
