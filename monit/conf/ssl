@@ -1,0 +1,2 @@
+check program ssl with path "/opt/monit/scripts/monit-ssl"
+  if status != 0 for 7 cycles then alert
