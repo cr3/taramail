@@ -1,6 +1,7 @@
 set daemon 30
 set log /var/log/monit.log
 
+set pidfile /var/run/monit.pid
 set idfile /var/lib/monit/id
 set statefile /var/lib/monit/state
 
