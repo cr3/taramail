@@ -1,6 +1,7 @@
 services:
   dyndns:
     build: dyndns
+    restart: always
     volumes:
       - ./dyndns/settings.txt:/settings.txt
 
@@ -322,6 +323,7 @@ services:
         certbot renew --webroot --webroot-path=/var/www/html --deploy-hook /deploy-hook.sh;
         sleep 12h;
       done"
+    restart: always
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
     volumes:
@@ -366,6 +368,7 @@ services:
 
   monit:
     build: monit
+    restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     depends_on:
