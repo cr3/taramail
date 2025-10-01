@@ -1,10 +1,4 @@
 services:
-  dyndns:
-    build: dyndns
-    restart: always
-    volumes:
-      - ./dyndns/settings.txt:/settings.txt
-
   unbound:
     build: unbound
     volumes:
