@@ -10,6 +10,8 @@ services:
       /deploy-hook.sh;
       echo Ready;
       sleep infinity"
+    environment:
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
     volumes:
       - ./certbot/generate-cert.sh:/generate-cert.sh:ro
 

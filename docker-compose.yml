@@ -19,8 +19,15 @@ services:
   mysql:
     image: mariadb:10.11
     depends_on:
-      - unbound
+      unbound:
+        condition: service_healthy
     user: mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
     stop_grace_period: 45s
     volumes:
       - ./mysql/conf.d/:/etc/mysql/conf.d/:ro,Z
@@ -63,10 +70,14 @@ services:
       && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
     depends_on:
-      - dockerapi
-      - memcached
-      - mysql
-      - redis
+      dockerapi:
+        condition: service_started
+      memcached:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     environment:
@@ -86,7 +97,8 @@ services:
     image: clamav/clamav:1.4.1
     restart: always
     depends_on:
-      - unbound
+      unbound:
+        condition: service_healthy
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     volumes:
@@ -100,9 +112,12 @@ services:
     build: rspamd
     stop_grace_period: 30s
     depends_on:
-      - clamd
-      - dovecot
-      - redis
+      clamd:
+        condition: service_started
+      dovecot:
+        condition: service_started
+      redis:
+        condition: service_started
     environment:
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
@@ -121,10 +136,14 @@ services:
   postfix:
     build: postfix
     depends_on:
-      - api
-      - mysql
-      - redis
-      - unbound
+      api:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      unbound:
+        condition: service_healthy
     environment:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
@@ -155,9 +174,14 @@ services:
   dovecot:
     build: dovecot
     depends_on:
-      - mysql
-      - netfilter
-      - redis
+      certbot:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      netfilter:
+        condition: service_started
+      redis:
+        condition: service_started
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     cap_add:
@@ -235,8 +259,10 @@ services:
   sogo:
     build: sogo
     depends_on:
-      - api
-      - redis
+      api:
+        condition: service_started
+      redis:
+        condition: service_started
     environment:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
@@ -278,10 +304,16 @@ services:
   nginx:
     build: nginx
     depends_on:
-      - redis
-      - api
-      - sogo
-      - rspamd
+      redis:
+        condition: service_started
+      api:
+        condition: service_started
+      certbot:
+        condition: service_healthy
+      sogo:
+        condition: service_started
+      rspamd:
+        condition: service_started
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     environment:
@@ -311,6 +343,11 @@ services:
 
   certbot:
     image: certbot/certbot
+    depends_on:
+      dockerapi:
+        condition: service_started
+      unbound:
+        condition: service_healthy
     entrypoint: ""
     command: >
       sh -c "trap exit TERM;
@@ -319,13 +356,20 @@ services:
         sleep 12h;
       done"
     restart: always
+    healthcheck:
+      test: ["CMD", "test", "-e", "/etc/letsencrypt/live/fullchain.pem"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 15
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
     volumes:
       - ./certbot/deploy-hook.sh:/deploy-hook.sh:ro
       - certbot-certs:/etc/letsencrypt
       - certbot-www:/var/www/html
-    network_mode: "host"
+    networks:
+      - network
 
   netfilter:
     build: backend
@@ -367,10 +411,14 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
     depends_on:
-      - certbot
-      - dockerapi
-      - mysql
-      - redis
+      certbot:
+        condition: service_started
+      dockerapi:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "${MONIT_PORT:-127.0.0.1:2812}:2812"
     volumes:

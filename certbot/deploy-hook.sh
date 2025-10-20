@@ -16,7 +16,7 @@ cp ${LE_DIR}/live/${MAIL_HOSTNAME}/fullchain.pem ${LE_DIR}/live/fullchain.pem
 # Restart services that use the cert.
 err_count=0
 for SERVICE in postfix dovecot nginx; do
-  if ! curl --silent -X POST http://dockerapi/services/${SERVICE}/restart; then
+  if ! wget --quiet --post-data="" "http://dockerapi/services/${SERVICE}/restart" -O -; then
     echo "Failed to restart service ${SERVICE}" >&2
     err_count=$(( ${err_count} + 1 ))
   fi

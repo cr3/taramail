@@ -17,8 +17,7 @@ fi
 mkdir -p "${LIVE_DIR}" "${ARCHIVE_DIR}" "${RENEWAL_DIR}"
 
 # Generate private key and self-signed certificate
-openssl genrsa -out "${ARCHIVE_DIR}/privkey1.pem" 2048
-openssl req -new -x509 -key "${ARCHIVE_DIR}/privkey1.pem" -out "${ARCHIVE_DIR}/cert1.pem" -days 365 -subj "/CN=${MAIL_HOSTNAME}"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "${ARCHIVE_DIR}/privkey1.pem" -out "${ARCHIVE_DIR}/cert1.pem" -subj "/CN=${MAIL_HOSTNAME}" -addext "subjectAltName=IP:${IPV4_NETWORK}.240"
 
 # Create chain.pem (self-signed so chain = cert) and fullchain.pem (cert + chain)
 cp "${ARCHIVE_DIR}/cert1.pem" "${ARCHIVE_DIR}/chain1.pem"
