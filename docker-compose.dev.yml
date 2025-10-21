@@ -1,30 +1,25 @@
+name: taramail
 services:
-  memcached:
-    command: memcached -vv
+  api:
+    volumes:
+      - ./backend/taramail:/app/taramail
+    command: >
+      bash -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.dev.yaml --reload"
 
   certbot:
-    image: certbot/certbot
-    command: >
-      sh -c "trap exit TERM;
-      /generate-cert.sh;
-      /deploy-hook.sh;
-      echo Ready;
-      sleep infinity"
-    environment:
-      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
     volumes:
       - ./certbot/generate-cert.sh:/generate-cert.sh:ro
-
-  api:
+    environment:
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
     command: >
-      bash -c "alembic upgrade head
-      && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.dev.yaml --reload"
-    volumes:
-      - ./backend/taramail:/app/taramail
+      sh -c "trap exit TERM; /generate-cert.sh; /deploy-hook.sh; echo Ready; sleep infinity"
 
   dockerapi:
-    command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --reload
-    environment:
-      - LOG_LEVEL=DEBUG
     volumes:
       - ./backend/taramail:/app/taramail
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --reload
+
+  memcached:
+    command: memcached -vv

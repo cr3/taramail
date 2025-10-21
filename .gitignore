@@ -1,5 +1,8 @@
 # Environment variables
 .env
 
+# Lint checker
+node_modules/
+
 # pytest-xprocess cache
 .xprocess/

@@ -4,7 +4,8 @@ PYTHON := poetry run python
 TOUCH := $(PYTHON) -c 'import sys; from pathlib import Path; Path(sys.argv[1]).touch()'
 
 poetry.lock: pyproject.toml
-	poetry lock
+	@echo Updating lock file
+	@poetry lock
 
 # Build .venv with deps.
 $(VENV): poetry.lock

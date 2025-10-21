@@ -80,7 +80,7 @@ class ComposeServer(ProcessServer):
             .with_remove()
         )
 
-        return ProcessData(self.pattern, command)
+        return ProcessData(self.pattern, command, timeout=180)
 
     @contextmanager
     def run(self, name):
