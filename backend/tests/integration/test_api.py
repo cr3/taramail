@@ -3,6 +3,7 @@
 from hamcrest import (
     assert_that,
     has_entries,
+    starts_with,
 )
 
 
@@ -45,3 +46,18 @@ def test_api_mailboxes(api_session, unique):
         api_session.delete(f"/api/domains/{username}")
 
     assert_that(response.json(), has_entries(username=username, name="test"))
+
+
+def test_api_dkim(api_session, unique):
+    """The API should expose a DKIM API."""
+    unique("text")
+    domain = unique("domain")
+    api_session.post("/api/dkim", json={
+        "domain": domain,
+    })
+    try:
+        response = api_session.get(f"/api/dkim/{domain}")
+    finally:
+        api_session.delete(f"/api/dkim/{domain}")
+
+    assert_that(response.json(), has_entries(dkim_selector="dkim", dkim_txt=starts_with("v=DKIM")))

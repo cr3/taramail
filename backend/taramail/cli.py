@@ -13,12 +13,11 @@ from textwrap import dedent
 
 from lookuper import lookup
 from more_itertools import bucket, only
+from requests import HTTPError, RequestException
 
 from taramail.http import HTTPSession
 
-DEFAULT_API_URL = "https://taram.ca/api/"
-
-API_URL = os.environ.get("TARAM_API_URL", DEFAULT_API_URL)
+DEFAULT_API_URL = "https://mail.taram.ca/api/"
 
 
 def get_arg_type(arg, default=str):
@@ -33,7 +32,7 @@ def get_arg_type(arg, default=str):
 
 def get_openapi_schema(session):
     """Get and parse the OpenAPI schema from the API."""
-    response = session.get("openapi.json")
+    response = session.get("openapi.json", verify=False)
     return response.json()
 
 
@@ -49,19 +48,25 @@ def call_api(session, method, path, args, keys):
         params=values["query"],
         json=values["body"],
         headers=headers,
+        verify=not args.get("no_verify", False),
     )
 
     return response.json()
 
 
-def make_args_parser(schema):
+def make_args_parser():
     epilog = dedent(f"""\
     environments:
-      TARAM_API_URL     URL of the API (default: {DEFAULT_API_URL})
+      TARAMAIL_API_URL     URL of the API (default: {DEFAULT_API_URL})
     """)
     args_parser = ArgumentParser(
         epilog=epilog,
         formatter_class=RawDescriptionHelpFormatter,
+    )
+    args_parser.add_argument(
+        "--no-verify",
+        action="store_true",
+        help="Do not verify the SSL certificate.",
     )
     args_parser.add_argument(
         "--output",
@@ -69,6 +74,11 @@ def make_args_parser(schema):
         default=sys.stdout,
         help="output file (default: stdout)",
     )
+
+    return args_parser
+
+
+def add_command_args(args_parser, schema):
     command = args_parser.add_subparsers(
         dest="command",
     )
@@ -137,10 +147,21 @@ def make_args_parser(schema):
 
 def main(argv=None):
     """Entry point to the taramail command-line interface."""
-    session = HTTPSession.with_origin(API_URL)
-    schema = get_openapi_schema(session)
-    parser = make_args_parser(schema)
+    api_url = os.getenv("TARAMAIL_API_URL", DEFAULT_API_URL)
+
+    parser = make_args_parser()
+    session = HTTPSession.with_origin(api_url)
+    try:
+        schema = get_openapi_schema(session)
+    except RequestException as e:
+        parser.error(e)
+
+    parser = add_command_args(parser, schema)
     args = parser.parse_args(argv)
-    data = args.func(session, vars(args))
+    try:
+        data = args.func(session, vars(args))
+    except HTTPError as e:
+        parser.error(e)
+
     output = json.dumps(data, indent=2)
     args.output.write(output)

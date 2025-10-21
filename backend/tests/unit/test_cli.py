@@ -6,7 +6,8 @@ import pytest
 import responses
 
 from taramail.cli import (
-    API_URL,
+    DEFAULT_API_URL,
+    add_command_args,
     call_api,
     get_arg_type,
     get_openapi_schema,
@@ -53,24 +54,26 @@ def test_call_api():
     assert result == body
 
 
-def test_make_args_parser_command():
-    """Making an args parser should parse commands from the schema."""
-    args_parser = make_args_parser({
+def test_add_command_args():
+    """Adding command args should parse commands from the schema."""
+    parser = make_args_parser()
+    parser = add_command_args(parser, {
         "paths": {
             "test": {
                 "get": {},
             },
         },
     })
-    args = args_parser.parse_args(["get_test"])
+    args = parser.parse_args(["get_test"])
     assert args.command == "get_test"
 
 
-def test_make_args_parser_command_error(capsys, unique):
-    """Making an args parser should raise on unknown commands."""
-    args_parser = make_args_parser({})
+def test_add_command_args_error(capsys):
+    """Adding empty command args should raise on unknown commands."""
+    parser = make_args_parser()
+    parser = add_command_args(parser, {})
     with pytest.raises(SystemExit):
-        args_parser.parse_args(["get_test"])
+        parser.parse_args(["get_test"])
 
 
 @responses.activate
@@ -78,7 +81,7 @@ def test_main_help(capsys):
     """The main function should output usage when asked for --help."""
     responses.add(
         responses.GET,
-        f"{API_URL}openapi.json",
+        f"{DEFAULT_API_URL}openapi.json",
         json={},
     )
     with pytest.raises(SystemExit):

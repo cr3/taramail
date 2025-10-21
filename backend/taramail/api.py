@@ -19,6 +19,12 @@ from taramail.db import (
     db_transaction,
     get_db_session,
 )
+from taramail.dkim import (
+    DKIMCreate,
+    DKIMDetails,
+    DKIMDuplicate,
+    DKIMManager,
+)
 from taramail.domain import DomainManager
 from taramail.mailbox import MailboxManager
 from taramail.queue import (
@@ -63,6 +69,11 @@ def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
 
 SogoDep = Annotated[Sogo, Depends(get_sogo)]
+
+def get_dkim_manager(store: StoreDep):
+    return DKIMManager(store)
+
+DKIMManagerDep = Annotated[DKIMManager, Depends(get_dkim_manager)]
 
 def get_domain_manager(db: DbDep, store: StoreDep):
     return DomainManager(db, store)
@@ -135,6 +146,33 @@ def put_mailbox(username: str, update: MailboxUpdate, manager: MailboxManagerDep
 def delete_mailbox(username: str, manager: MailboxManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_mailbox(username)
+
+
+@app.get("/api/dkim")
+def get_dkim_keys(manager: DKIMManagerDep) -> dict[str, str]:
+    return manager.get_keys()
+
+
+@app.get("/api/dkim/{domain}")
+def get_dkim_details(domain: str, manager: DKIMManagerDep) -> DKIMDetails:
+    return manager.get_details(domain)
+
+
+@app.post("/api/dkim")
+def post_dkim(create: DKIMCreate, manager: DKIMManagerDep) -> DKIMDetails:
+    manager.create_key(create)
+    return manager.get_details(create.domain)
+
+
+@app.post("/api/dkim/duplicate")
+def post_dkim_duplicate(duplicate: DKIMDuplicate, manager: DKIMManagerDep) -> DKIMDetails:
+    manager.duplicate_key(duplicate)
+    return manager.get_details(duplicate.to_domain)
+
+
+@app.delete("/api/dkim/{domain}")
+def delete_dkim(domain: str, manager: DKIMManagerDep) -> None:
+    manager.delete_key(domain)
 
 
 @app.get("/sogo-auth")

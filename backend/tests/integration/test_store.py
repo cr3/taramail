@@ -167,6 +167,23 @@ def test_hset_set(store, unique):
     assert store.get(key) == value
 
 
+def test_hkeys_single(store, unique):
+    """Calling hkeys with a single field should return a list with that field."""
+    key, field = unique("text"), unique("text")
+    store.hset(key, field, "")
+    fields = store.hkeys(key)
+    assert fields == [field]
+
+
+def test_hkeys_multiple(store, unique):
+    """Calling hkeys with multiple fields should return all fields."""
+    key, field1, field2 = unique("text"), unique("text"), unique("text")
+    store.hset(key, field1, "")
+    store.hset(key, field2, "")
+    fields = store.hkeys(key)
+    assert fields == [field1, field2]
+
+
 def test_set_hget(store, unique):
     """Calling hget after set should raise."""
     key, field = unique("text"), unique("text")

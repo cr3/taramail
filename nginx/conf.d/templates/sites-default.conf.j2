@@ -59,11 +59,24 @@ real_ip_header proxy_protocol;
 {% endif %}
 real_ip_recursive on;
 
+location ^~ /.well-known/acme-challenge/ {
+    allow all;
+    default_type "text/plain";
+}
+
 rewrite ^/.well-known/caldav$ /SOGo/dav/ permanent;
 rewrite ^/.well-known/carddav$ /SOGo/dav/ permanent;
 
 location ^~ /principals {
     return 301 /SOGo/dav;
+}
+
+location /api/ {
+    proxy_pass       http://api/;
+    proxy_set_header Host      $http_host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_redirect off;
 }
 
 location /sogo-auth-verify {

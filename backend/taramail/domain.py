@@ -1,11 +1,12 @@
 from contextlib import suppress
 
-from attrs import define, field
+from attrs import Factory, define, field
 from sqlalchemy import or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
 
 from taramail.db import DBSession
+from taramail.dkim import DKIMCreate, DKIMManager
 from taramail.http import HTTPSession
 from taramail.models import (
     AliasDomainModel,
@@ -36,6 +37,10 @@ class DomainManager:
     db: DBSession
     store: Store = field(factory=RedisStore.from_env)
     dockerapi: HTTPSession = HTTPSession("http://dockerapi/")
+    dkim_manager: DKIMManager = field(default=Factory(
+        lambda self: DKIMManager(self.store),
+        takes_self=True,
+    ))
 
     def get_origin_domain(self, domain):
         with suppress(NoResultFound):
@@ -119,7 +124,12 @@ class DomainManager:
 
         self.store.hset("DOMAIN_MAP", model.domain, 1)
 
-        # TODO: dkim
+        dkim_create = DKIMCreate(
+            domain=model.domain,
+            dkim_selector=domain_create.dkim_selector,
+            key_size=domain_create.key_size,
+        )
+        self.dkim_manager.create_key(dkim_create)
 
         if domain_create.restart_sogo:
             self.dockerapi.post("/services/sogo/restart")

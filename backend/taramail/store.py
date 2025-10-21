@@ -56,6 +56,10 @@ class Store(ABC):
         """Removes the specified fields from the hash stored at key."""
 
     @abstractmethod
+    def hkeys(self, key: str) -> list:
+        """Returns all field names in the hash stored at key."""
+
+    @abstractmethod
     def flushall(self):
         """Delete all the keys of all the existing databases, not just the currently selected one."""
 
@@ -160,6 +164,11 @@ class MemcachedStore(Store):
             self.set(key, json.dumps(data))
 
         return count
+
+    def hkeys(self, key: str) -> list:
+        """See `Store.hkeys`."""
+        data = self.hgetall(key)
+        return list(data.keys()) if data else []
 
     def flushall(self):
         """See `Store.flushall`."""
@@ -278,6 +287,11 @@ class MemoryStore(Store):
 
         return count
 
+    def hkeys(self, key: str) -> list:
+        """See `Store.hkeys`."""
+        data = self.hgetall(key)
+        return list(data.keys()) if data else []
+
     def flushall(self):
         """See `Store.flushall`."""
         self.records.clear()
@@ -334,5 +348,6 @@ class RedisStore(StrictRedis, Store):
     get = wrap_response_error(StrictRedis.get)
     hget = wrap_response_error(StrictRedis.hget)
     hgetall = wrap_response_error(StrictRedis.hgetall)
+    hkeys = wrap_response_error(StrictRedis.hkeys)
     _hset = wrap_response_error(StrictRedis.hset)
     _hexpire = wrap_response_error(StrictRedis.hexpire)
