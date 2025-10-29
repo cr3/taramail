@@ -44,8 +44,8 @@ http {
     # HTTP to HTTPS redirect
     server {
         root /web;
-        listen {{ HTTP_PORT }} default_server;
-        listen [::]:{{ HTTP_PORT }} default_server;
+        listen 80 default_server;
+        listen [::]:80 default_server;
 
         server_name {{ MAIL_HOSTNAME }} autodiscover.* autoconfig.* {{ ADDITIONAL_SERVER_NAMES | join(' ') }};
 
@@ -63,8 +63,8 @@ http {
     server {
         listen 127.0.0.1:65510; # sogo-auth verify internal
 
-        listen {{ HTTPS_PORT }} ssl;
-        listen [::]:{{ HTTPS_PORT }} ssl;
+        listen 443 ssl;
+        listen [::]:443 ssl;
 
         http2 on;
 
@@ -81,8 +81,8 @@ http {
     server {
         listen 127.0.0.1:65510; # sogo-auth verify internal
 
-        listen {{ HTTPS_PORT }} ssl;
-        listen [::]:{{ HTTPS_PORT }} ssl;
+        listen 443 ssl;
+        listen [::]:443 ssl;
 
         http2 on;
 
@@ -97,8 +97,8 @@ http {
 
     {% for cert in valid_cert_dirs %}
     server {
-        listen {{ HTTPS_PORT }} ssl;
-        listen [::]:{{ HTTPS_PORT }} ssl;
+        listen 443 ssl;
+        listen [::]:443 ssl;
 
         http2 on;
 

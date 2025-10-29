@@ -17,7 +17,7 @@ from requests import HTTPError, RequestException
 
 from taramail.http import HTTPSession
 
-DEFAULT_API_URL = "https://mail.taram.ca/api/"
+DEFAULT_API_URL = "https://mail.taram.ca/"
 
 
 def get_arg_type(arg, default=str):
@@ -32,7 +32,7 @@ def get_arg_type(arg, default=str):
 
 def get_openapi_schema(session):
     """Get and parse the OpenAPI schema from the API."""
-    response = session.get("openapi.json", verify=False)
+    response = session.get("/api/openapi.json", verify=False)
     return response.json()
 
 

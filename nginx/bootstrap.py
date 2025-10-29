@@ -11,15 +11,6 @@ def includes_conf(env, template_vars):
     conf_d.joinpath("server_name.active").write_text(dedent(f"""
         server_name {template_vars['MAIL_HOSTNAME']} autodiscover.* autoconfig.* {' '.join(template_vars['ADDITIONAL_SERVER_NAMES'])};
     """))
-    conf_d.joinpath("listen_plain.active").write_text(dedent(f"""
-        listen {template_vars['HTTP_PORT']};
-        listen [::]:{template_vars['HTTP_PORT']};
-    """))
-    conf_d.joinpath("listen_ssl.active").write_text(dedent(f"""
-        listen {template_vars['HTTPS_PORT']};
-        listen [::]:{template_vars['HTTPS_PORT']} ssl;
-        http2 on;
-    """))
 
 def sites_default_conf(env, template_vars):
     path = Path("/etc/nginx/includes/sites-default.conf")
@@ -42,8 +33,6 @@ def prepare_template_vars(environ):
         "TRUSTED_NETWORK": environ.get("TRUSTED_NETWORK", False),
         "MAIL_HOSTNAME": environ.get("MAIL_HOSTNAME", ""),
         "ADDITIONAL_SERVER_NAMES": [item.strip() for item in additional_server_names.split(",") if item.strip()],
-        "HTTP_PORT": environ.get("HTTP_PORT", "80"),
-        "HTTPS_PORT": environ.get("HTTPS_PORT", "443"),
     }
 
     ssl_dir = Path("/etc/letsencrypt/live/")

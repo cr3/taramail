@@ -47,7 +47,10 @@ from taramail.store import (
 )
 
 logger = logging.getLogger("uvicorn")
-app = FastAPI(docs_url="/swagger")
+app = FastAPI(
+    docs_url="/api/swagger",
+    openapi_url="/api/openapi.json",
+)
 
 
 async def get_db():
