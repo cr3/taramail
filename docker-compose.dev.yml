@@ -9,6 +9,7 @@ services:
   certbot:
     volumes:
       - ./certbot/generate-cert.sh:/generate-cert.sh:ro
+      - ./certbot/dhparams.pem:/etc/letsencrypt/dhparams.pem:ro
     environment:
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
     command: >
