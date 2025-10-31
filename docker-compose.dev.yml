@@ -23,3 +23,11 @@ services:
 
   memcached:
     command: memcached -vv
+
+  unbound:
+    healthcheck: 
+      test: [ "CMD-SHELL", "exit 0" ]
+      start_period: 0s
+      interval: 1s
+      timeout: 1s
+      retries: 1
