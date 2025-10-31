@@ -14,8 +14,8 @@ class DomainCreate(BaseModel):
     aliases: int = 400
     mailboxes: int = 10
     defquota: int = 3 * gibi
-    maxquota: int = 10 * gibi
-    quota: int = 10 * gibi
+    maxquota: int = 100 * gibi
+    quota: int = 100 * gibi
     active: bool = True
     gal: bool = True
     backupmx: int = False
@@ -73,7 +73,7 @@ class MailboxCreate(BaseModel):
     password: str
     password2: str
     name: str = ""
-    quota: int = 10 * gibi
+    quota: int = 0
     quarantine_notification: str = "hourly"
     quarantine_category: str = "reject"
     active: bool = True

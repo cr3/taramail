@@ -28,7 +28,6 @@ from taramail.store import (
     RedisStore,
     Store,
 )
-from taramail.units import mebi
 
 
 @define(frozen=True)
@@ -58,8 +57,8 @@ class DomainManager:
         mailbox_data_domain = self._get_mailbox_data_domain(domain)
         sum_quota_in_use = self._get_sum_quota_in_use(domain)
 
-        max_new_mailbox_quota = max(model.quota * mebi - mailbox_data_domain.in_use, model.maxquota * mebi)
-        def_new_mailbox_quota = max(max_new_mailbox_quota, model.defquota * mebi)
+        max_new_mailbox_quota = max(model.quota - mailbox_data_domain.in_use, model.maxquota)
+        def_new_mailbox_quota = max(max_new_mailbox_quota, model.defquota)
         quota_used_in_domain = mailbox_data_domain.in_use
         bytes_total = sum_quota_in_use.bytes_total or 0
         msgs_total = sum_quota_in_use.msgs_total or 0
@@ -80,9 +79,9 @@ class DomainManager:
             description=model.description,
             max_num_aliases_for_domain=model.aliases,
             max_num_mboxes_for_domain=model.mailboxes,
-            def_quota_for_mbox=model.defquota * mebi,
-            max_quota_for_mbox=model.maxquota * mebi,
-            max_quota_for_domain=model.quota * mebi,
+            def_quota_for_mbox=model.defquota,
+            max_quota_for_mbox=model.maxquota,
+            max_quota_for_domain=model.quota,
             relayhost=model.relayhost,
             backupmx=model.backupmx,
             gal=model.gal,
@@ -140,9 +139,9 @@ class DomainManager:
         details = self.get_domain_details(domain)
         model = self.db.query(DomainModel).filter_by(domain=domain).one()
         model.mailboxes = details.max_num_mboxes_for_domain
-        model.defquota = details.def_quota_for_mbox / mebi
-        model.maxquota = details.max_quota_for_mbox / mebi
-        model.quota = details.max_quota_for_domain / mebi
+        model.defquota = details.def_quota_for_mbox
+        model.maxquota = details.max_quota_for_mbox
+        model.quota = details.max_quota_for_domain
         for key, value in domain_update.model_dump().items():
             if value is not None:
                 setattr(model, key, value)
@@ -186,8 +185,8 @@ class DomainManager:
         return (
             self.db.query(
                 func.count(MailboxModel.username).label("count"),
-                func.coalesce(func.round(MailboxModel.quota / mebi), 0).label("biggest_mailbox"),
-                func.coalesce(func.round(func.sum(MailboxModel.quota) / mebi), 0).label("quota_all"),
+                func.coalesce(MailboxModel.quota, 0).label("biggest_mailbox"),
+                func.coalesce(func.sum(MailboxModel.quota), 0).label("quota_all"),
             )
             .filter_by(kind="")
             .filter_by(domain=domain)

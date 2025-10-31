@@ -36,7 +36,6 @@ from taramail.store import (
     RedisStore,
     Store,
 )
-from taramail.units import mebi
 
 
 @define(frozen=True)
@@ -106,17 +105,19 @@ class MailboxManager:
 
         domain = mailbox_create.domain.lower().strip()
         username = f"{local_part}@{domain}"
-        # validate username as email
+        # TODO: validate username as email
         name = mailbox_create.name or local_part
         name = name.lstrip("<").rstrip(">")
 
         domain_data = self._get_domain_data(domain)
+        quota = mailbox_create.quota or domain_data.defquota
+
         mailbox_data = self._get_mailbox_data(domain)
         if mailbox_data.count >= domain_data.mailboxes:
             raise KeyError("Max mailbox exceeded")
-        if mailbox_create.quota > domain_data.maxquota:
+        if quota > domain_data.maxquota:
             raise KeyError("Mailbox quota exceeded")
-        if mailbox_data.quota + mailbox_create.quota > domain_data.quota:
+        if mailbox_data.quota + quota > domain_data.quota:
             raise KeyError("Mailbox quota left exceeded")
 
         validate_passwords(mailbox_create.password, mailbox_create.password2)
@@ -128,7 +129,7 @@ class MailboxManager:
             name=name,
             local_part=local_part,
             domain=domain,
-            quota=mailbox_create.quota,
+            quota=quota,
             active=mailbox_create.active,
         )
         quota2 = Quota2Model(
@@ -262,7 +263,7 @@ class MailboxManager:
         return (
             self.db.query(
                 func.count(MailboxModel.username).label("count"),
-                func.coalesce(func.round(func.sum(MailboxModel.quota) / mebi), 0).label("quota"),
+                func.coalesce(func.sum(MailboxModel.quota), 0).label("quota"),
             )
             .filter_by(kind="")
             .filter_by(domain=domain)
