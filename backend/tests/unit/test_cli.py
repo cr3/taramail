@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import responses
+from yarl import URL
 
 from taramail.cli import (
     DEFAULT_API_URL,
@@ -35,7 +36,7 @@ def test_get_arg_type(arg, expected):
 def test_get_openapi_schema():
     """Getting the OpenAPI schema should return the body of openapi.json."""
     body = {"test": True}
-    http_session = HTTPSession("http://localhost/")
+    http_session = HTTPSession.with_origin("http://localhost/")
     with patch.object(http_session, "get") as mock_get:
         mock_get.return_value = Mock(json=Mock(return_value=body))
         result = get_openapi_schema(http_session)
@@ -46,7 +47,7 @@ def test_get_openapi_schema():
 def test_call_api():
     """Calling the API sould make a request with the given method."""
     body = {"test": True}
-    http_session = HTTPSession("http://localhost/")
+    http_session = HTTPSession.with_origin("http://localhost/")
     with patch.object(http_session, "request") as mock_request:
         mock_request.return_value = Mock(json=Mock(return_value=body))
         result = call_api(http_session, "GET", "/test", {}, {})
@@ -79,9 +80,10 @@ def test_add_command_args_error(capsys):
 @responses.activate
 def test_main_help(capsys):
     """The main function should output usage when asked for --help."""
+    url = URL(DEFAULT_API_URL).with_path("/api/openapi.json")
     responses.add(
         responses.GET,
-        f"{DEFAULT_API_URL}openapi.json",
+        str(url),
         json={},
     )
     with pytest.raises(SystemExit):

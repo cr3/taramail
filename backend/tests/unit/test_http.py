@@ -19,7 +19,7 @@ def test_http_session_request(method):
         status=200,
     )
 
-    session = HTTPSession("http://localhost/")
+    session = HTTPSession.with_origin("http://localhost/")
     result = session.request(method, "a")
     assert result.status_code == 200
 
@@ -33,6 +33,28 @@ def test_http_session_get():
         status=200,
     )
 
-    session = HTTPSession("http://localhost/")
+    session = HTTPSession.with_origin("http://localhost/")
     result = session.get("a")
+    assert result.status_code == 200
+
+
+@responses.activate
+@pytest.mark.parametrize("origin", [
+    "http://localhost/",
+    "http://localhost",
+])
+@pytest.mark.parametrize("path", [
+    "a",
+    "/a",
+])
+def test_http_session_origin(origin, path):
+    """The HTTP session origin should handle slashes."""
+    responses.add(
+        responses.GET,
+        "http://localhost/a",
+        status=200,
+    )
+
+    session = HTTPSession.with_origin(origin)
+    result = session.request("GET", path)
     assert result.status_code == 200

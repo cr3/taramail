@@ -1,6 +1,7 @@
 """HTTP module."""
 
 from requests import Session
+from yarl import URL
 
 HTTP_METHODS = {
     "GET",
@@ -17,7 +18,7 @@ HTTP_METHODS = {
 class HTTPSession(Session):
     """An HTTP session with origin."""
 
-    def __init__(self, origin, timeout=60, **kwargs):
+    def __init__(self, origin: URL, timeout=60, **kwargs):
         super().__init__(**kwargs)
         self.origin = origin
         self.timeout = timeout
@@ -30,9 +31,10 @@ class HTTPSession(Session):
         )
 
     @classmethod
-    def with_origin(cls, origin: str):
+    def with_origin(cls, origin: str | URL):
         """Make sure the origin has a single trailing slash."""
-        return cls(origin.rstrip("/") + "/")
+        url = URL(origin)
+        return cls(url)
 
     def request(self, method: str, path: str, **kwargs):
         """Send an HTTP request.
@@ -41,7 +43,7 @@ class HTTPSession(Session):
         :param path: Path joined to the URL.
         :param \\**kwargs: Optional keyword arguments passed to the session.
         """
-        url = str(self.origin) + path
+        url = self.origin.with_path(path)
         kwargs.setdefault("timeout", self.timeout)
         response = super().request(method, url, **kwargs)
         response.raise_for_status()

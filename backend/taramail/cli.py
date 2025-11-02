@@ -11,9 +11,10 @@ from argparse import (
 from collections import defaultdict
 from textwrap import dedent
 
+import urllib3
 from lookuper import lookup
 from more_itertools import bucket, only
-from requests import HTTPError, RequestException
+from requests.exceptions import RequestException
 
 from taramail.http import HTTPSession
 
@@ -32,7 +33,11 @@ def get_arg_type(arg, default=str):
 
 def get_openapi_schema(session):
     """Get and parse the OpenAPI schema from the API."""
-    response = session.get("/api/openapi.json", verify=False)
+    # Only verify the certificate for the OpenAPI schema when
+    # running in production.
+    verify = session.origin == DEFAULT_API_URL
+    response = session.get("/api/openapi.json", verify=verify)
+
     return response.json()
 
 
@@ -148,6 +153,7 @@ def add_command_args(args_parser, schema):
 def main(argv=None):
     """Entry point to the taramail command-line interface."""
     api_url = os.getenv("TARAMAIL_API_URL", DEFAULT_API_URL)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     parser = make_args_parser()
     session = HTTPSession.with_origin(api_url)
@@ -160,7 +166,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         data = args.func(session, vars(args))
-    except HTTPError as e:
+    except RequestException as e:
         parser.error(e)
 
     output = json.dumps(data, indent=2)
