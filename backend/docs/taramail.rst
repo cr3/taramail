@@ -36,6 +36,14 @@ taramail.db module
    :undoc-members:
    :show-inheritance:
 
+taramail.dkim module
+--------------------
+
+.. automodule:: taramail.dkim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 taramail.dockerapi module
 -------------------------
 
@@ -112,14 +120,6 @@ taramail.registry module
 ------------------------
 
 .. automodule:: taramail.registry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-taramail.schemas module
------------------------
-
-.. automodule:: taramail.schemas
    :members:
    :undoc-members:
    :show-inheritance:

@@ -31,27 +31,25 @@ from taramail.dkim import (
 )
 from taramail.domain import (
     DomainAlreadyExistsError,
+    DomainCreate,
+    DomainDetails,
     DomainManager,
     DomainNotFoundError,
+    DomainUpdate,
     DomainValidationError,
 )
 from taramail.mailbox import (
     MailboxAlreadyExistsError,
+    MailboxCreate,
+    MailboxDetails,
     MailboxManager,
     MailboxNotFoundError,
+    MailboxUpdate,
     MailboxValidationError,
 )
 from taramail.queue import (
     Queue,
     RedisQueue,
-)
-from taramail.schemas import (
-    DomainCreate,
-    DomainDetails,
-    DomainUpdate,
-    MailboxCreate,
-    MailboxDetails,
-    MailboxUpdate,
 )
 from taramail.sogo import Sogo
 from taramail.store import (

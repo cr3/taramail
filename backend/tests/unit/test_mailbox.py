@@ -2,13 +2,11 @@
 
 import pytest
 
+from taramail.domain import DomainCreate
 from taramail.mailbox import (
     MailboxAlreadyExistsError,
-    MailboxNotFoundError,
-)
-from taramail.schemas import (
-    DomainCreate,
     MailboxCreate,
+    MailboxNotFoundError,
     MailboxUpdate,
 )
 

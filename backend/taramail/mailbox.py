@@ -1,6 +1,8 @@
 from contextlib import suppress
+from datetime import datetime as dt
 
 from attrs import Factory, define, field
+from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
@@ -28,11 +30,6 @@ from taramail.password import (
     hash_password,
     validate_passwords,
 )
-from taramail.schemas import (
-    MailboxCreate,
-    MailboxDetails,
-    MailboxUpdate,
-)
 from taramail.sogo import Sogo
 from taramail.store import (
     RedisStore,
@@ -54,6 +51,88 @@ class MailboxNotFoundError(MailboxError):
 
 class MailboxValidationError(MailboxError):
     """Raised when a mailbox is invalid."""
+
+
+class MailboxCreate(BaseModel):
+
+    local_part: str
+    domain: str
+    password: str
+    password2: str
+    name: str = ""
+    quota: int = 0
+    quarantine_notification: str = "hourly"
+    quarantine_category: str = "reject"
+    active: bool = True
+    force_pw_update: bool = False
+    tls_enforce_in: bool = False
+    tls_enforce_out: bool = False
+    relayhost: int = 0
+    sogo_access: bool = True
+    imap_access: bool = True
+    pop3_access: bool = True
+    smtp_access: bool = True
+    sieve_access: bool = True
+    acl_spam_alias: bool = True
+    acl_tls_policy: bool = True
+    acl_spam_score: bool = True
+    acl_spam_policy: bool = True
+    acl_delimiter_action: bool = True
+    acl_syncjobs: bool = False
+    acl_eas_reset: bool = True
+    acl_sogo_profile_reset: bool = False
+    acl_pushover: bool = True
+    acl_quarantine: bool = True
+    acl_quarantine_attachments: bool = True
+    acl_quarantine_notification: bool = True
+    acl_quarantine_category: bool = True
+
+
+class MailboxDetails(BaseModel):
+
+    username: str
+    active: bool
+    domain: str
+    name: str
+    local_part: str
+    quota: int
+    quota_used: int
+    messages: int
+    quarantine_notification: str
+    quarantine_category: str
+    force_pw_update: bool
+    tls_enforce_in: bool
+    tls_enforce_out: bool
+    relayhost: int
+    sogo_access: bool
+    imap_access: bool
+    pop3_access: bool
+    smtp_access: bool
+    sieve_access: bool
+    last_imap_login: dt | None
+    last_smtp_login: dt | None
+    last_pop3_login: dt | None
+    last_sso_login: dt | None
+
+
+class MailboxUpdate(BaseModel):
+
+    password: str | None = None
+    password2: str | None = None
+    name: str | None = None
+    quota: int | None = None
+    quarantine_notification: str | None = None
+    quarantine_category: str | None = None
+    active: bool | None = None
+    force_pw_update: bool | None = None
+    tls_enforce_in: bool | None = None
+    tls_enforce_out: bool | None = None
+    relayhost: int | None = None
+    sogo_access: bool | None = None
+    imap_access: bool | None = None
+    pop3_access: bool | None = None
+    smtp_access: bool | None = None
+    sieve_access: bool | None = None
 
 
 @define(frozen=True)

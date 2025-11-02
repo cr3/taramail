@@ -1,6 +1,7 @@
 from contextlib import suppress
 
 from attrs import Factory, define, field
+from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
@@ -23,15 +24,11 @@ from taramail.models import (
     SenderAclModel,
     SpamaliasModel,
 )
-from taramail.schemas import (
-    DomainCreate,
-    DomainDetails,
-    DomainUpdate,
-)
 from taramail.store import (
     RedisStore,
     Store,
 )
+from taramail.units import gibi, kebi
 
 
 class DomainError(Exception):
@@ -48,6 +45,65 @@ class DomainNotFoundError(DomainError):
 
 class DomainValidationError(DomainError):
     """Raised when a domain is invalid."""
+
+
+class DomainCreate(BaseModel):
+
+    domain: str
+    description: str = ""
+    aliases: int = 400
+    mailboxes: int = 10
+    defquota: int = 3 * gibi
+    maxquota: int = 100 * gibi
+    quota: int = 100 * gibi
+    active: bool = True
+    gal: bool = True
+    backupmx: int = False
+    relay_all_recipients: bool = False
+    relay_unknown_only: bool = False
+    dkim_selector: str = "dkim"
+    key_size: int = 2 * kebi
+    restart_sogo: bool = True
+
+
+class DomainDetails(BaseModel):
+    max_new_mailbox_quota: int
+    def_new_mailbox_quota: int
+    quota_used_in_domain: int
+    bytes_total: int
+    msgs_total: int
+    mboxes_in_domain: int
+    mboxes_left: int
+    domain: str
+    description: str | None
+    max_num_aliases_for_domain: int
+    max_num_mboxes_for_domain: int
+    def_quota_for_mbox: int
+    max_quota_for_mbox: int
+    max_quota_for_domain: int
+    relayhost: int
+    backupmx: bool
+    gal: bool
+    active: bool
+    relay_all_recipients: bool
+    relay_unknown_only: bool
+    aliases_in_domain: int
+    aliases_left: int
+
+
+class DomainUpdate(BaseModel):
+
+    description: str | None = None
+    aliases: int | None = None
+    mailboxes: int | None = None
+    defquota: int | None = None
+    maxquota: int | None = None
+    quota: int | None = None
+    active: bool | None = None
+    gal: bool | None = None
+    backupmx: int | None = None
+    relay_all_recipients: bool | None = None
+    relay_unknown_only: bool | None = None
 
 
 @define(frozen=True)

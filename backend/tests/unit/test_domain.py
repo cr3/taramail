@@ -4,15 +4,13 @@ import pytest
 
 from taramail.domain import (
     DomainAlreadyExistsError,
+    DomainCreate,
     DomainNotFoundError,
+    DomainUpdate,
 )
 from taramail.models import (
     AliasDomainModel,
     DomainModel,
-)
-from taramail.schemas import (
-    DomainCreate,
-    DomainUpdate,
 )
 
 
