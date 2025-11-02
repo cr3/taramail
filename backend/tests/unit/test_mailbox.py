@@ -2,6 +2,10 @@
 
 import pytest
 
+from taramail.mailbox import (
+    MailboxAlreadyExistsError,
+    MailboxNotFoundError,
+)
 from taramail.schemas import (
     DomainCreate,
     MailboxCreate,
@@ -50,6 +54,21 @@ def test_mailbox_manager_create_mailbox(domain, mailbox_manager):
     assert result.domain == domain
 
 
+def test_mailbox_manager_create_mailbox_twice(domain, mailbox_manager):
+    """Creating a mailbox twice should raise."""
+    mailbox_create = MailboxCreate(
+        local_part="a",
+        domain=domain,
+        password="x",
+        password2="x",
+    )
+    mailbox_manager.create_mailbox(mailbox_create)
+    mailbox_manager.db.flush()
+
+    with pytest.raises(MailboxAlreadyExistsError):
+        mailbox_manager.create_mailbox(mailbox_create)
+
+
 def test_mailbox_manager_update_mailbox(domain, mailbox_manager):
     """Updating a mailbox should return the updated details."""
     mailbox_create = MailboxCreate(
@@ -95,5 +114,5 @@ def test_mailox_manager_delete_mailbox(domain, mailbox_manager):
     mailbox_manager.db.flush()
 
     mailbox_manager.delete_mailbox(f"a@{domain}")
-    with pytest.raises(KeyError):
+    with pytest.raises(MailboxNotFoundError):
         mailbox_manager.get_mailbox_details(mailbox.username)

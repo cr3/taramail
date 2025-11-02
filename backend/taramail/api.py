@@ -11,6 +11,7 @@ from fastapi import (
     Request,
     Response,
 )
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 
@@ -20,13 +21,26 @@ from taramail.db import (
     get_db_session,
 )
 from taramail.dkim import (
+    DKIMAlreadyExistsError,
     DKIMCreate,
     DKIMDetails,
     DKIMDuplicate,
     DKIMManager,
+    DKIMNotFoundError,
+    DKIMValidationError,
 )
-from taramail.domain import DomainManager
-from taramail.mailbox import MailboxManager
+from taramail.domain import (
+    DomainAlreadyExistsError,
+    DomainManager,
+    DomainNotFoundError,
+    DomainValidationError,
+)
+from taramail.mailbox import (
+    MailboxAlreadyExistsError,
+    MailboxManager,
+    MailboxNotFoundError,
+    MailboxValidationError,
+)
 from taramail.queue import (
     Queue,
     RedisQueue,
@@ -191,9 +205,35 @@ def get_rspamd_error(request: Request, queue: QueueDep) -> None:
     raise HTTPException(401, "Invalid password")
 
 
-@app.exception_handler(KeyError)
-async def key_error_handler(request: Request, exc: KeyError):
-    raise HTTPException(404, "Item not found") from exc
+error_handlers = {
+    DKIMAlreadyExistsError: 409,
+    DKIMNotFoundError: 404,
+    DKIMValidationError: 400,
+    DomainAlreadyExistsError: 409,
+    DomainNotFoundError: 404,
+    DomainValidationError: 400,
+    MailboxAlreadyExistsError: 409,
+    MailboxNotFoundError: 404,
+    MailboxValidationError: 400,
+}
+
+for exc_type, status in error_handlers.items():
+    @app.exception_handler(exc_type)
+    async def error_handler(request: Request, exc: exc_type, exc_type=exc_type, status=status):
+        logger.warning(f"{exc_type.__name__} at {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status,
+            content={"error": exc_type.__name__, "detail": str(exc)},
+        )
+
+
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception at {request.url}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Unhandled exception"},
+    )
 
 
 app.mount("/docs", StaticFiles(directory="./build/html", html=True, check_dir=False))

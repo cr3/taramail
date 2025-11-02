@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -6,11 +7,20 @@ import aiodocker
 from attrs import define, field
 from fastapi import (
     FastAPI,
-    HTTPException,
     Request,
 )
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+
+logger = logging.getLogger("uvicorn")
+
+
+class DockerapiError(Exception):
+    """Base exception for dockerapi errors."""
+
+
+class DockerapiNotFoundError(DockerapiError):
+    """Raised when a dockerapi service or action is not found."""
 
 
 @define(frozen=True)
@@ -21,7 +31,11 @@ class DockerapiService:
 
     async def call(self, action: str) -> None:
         for container in self.containers:
-            func = getattr(container, action)
+            try:
+                func = getattr(container, action)
+            except AttributeError as e:
+                raise DockerapiNotFoundError(f"Action not found: {action}") from e
+
             await func()
 
 
@@ -63,7 +77,7 @@ class Dockerapi:
         })
         containers = await self.docker.containers.list(all=True, filters=filters)
         if not containers:
-            raise KeyError(f"Service not found: {name}")
+            raise DockerapiNotFoundError(f"Service not found: {name}")
 
         return DockerapiService(name, containers)
 
@@ -97,10 +111,7 @@ async def get_services():
 
 @app.get("/services/{name}")
 async def get_service(name: str):
-    try:
-        service = await app.dockerapi.get_service(name)
-    except KeyError as e:
-        raise HTTPException(404, "Service not found") from e
+    service = await app.dockerapi.get_service(name)
 
     return JSONResponse({
         "name": service.name,
@@ -110,24 +121,32 @@ async def get_service(name: str):
 
 @app.post("/services/{name}/{action}")
 async def post_service_action(name: str, action: str):
-    try:
-        service = await app.dockerapi.get_service(name)
-    except KeyError as e:
-        raise HTTPException(404, "Service not found") from e
-
-    try:
-        await service.call(action)
-    except AttributeError as e:
-        raise HTTPException(400, "Unsupported action") from e
+    service = await app.dockerapi.get_service(name)
+    await service.call(action)
 
     return JSONResponse({"message": "action completed successfully"})
 
 
+error_handlers = {
+    DockerapiNotFoundError: 404,
+}
+
+for exc_type, status in error_handlers.items():
+    @app.exception_handler(exc_type)
+    async def error_handler(request: Request, exc: exc_type, exc_type=exc_type, status=status):
+        logger.warning(f"{exc_type.__name__} at {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status,
+            content={"message": exc_type.__name__, "detail": str(exc)},
+        )
+
+
 @app.exception_handler(Exception)
-async def unicorn_exception_handler(request: Request, exc: Exception):
+async def exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception at {request.url}")
     return JSONResponse(
-        {"message": str(exc)},
         status_code=500,
+        content={"message": "Unhandled exception"},
     )
 
 

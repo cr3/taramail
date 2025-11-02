@@ -2,6 +2,10 @@
 
 import pytest
 
+from taramail.domain import (
+    DomainAlreadyExistsError,
+    DomainNotFoundError,
+)
 from taramail.models import (
     AliasDomainModel,
     DomainModel,
@@ -36,7 +40,7 @@ def test_domain_manager_get_domain_details(db_model, domain_manager, unique):
 
 
 def test_domain_manager_create_domain(domain_manager, unique):
-    """Getting domain templates should return at least one template."""
+    """Creating a domain should make the details available."""
     domain = unique("domain")
     domain_create = DomainCreate(domain=domain)
     domain_manager.create_domain(domain_create)
@@ -45,6 +49,17 @@ def test_domain_manager_create_domain(domain_manager, unique):
 
     result = domain_manager.get_domain_details(domain)
     assert result.domain == domain
+
+
+def test_domain_manager_create_domain_twice(domain_manager, unique):
+    """Creating a domain twice should raise."""
+    domain = unique("domain")
+    domain_create = DomainCreate(domain=domain)
+    domain_manager.create_domain(domain_create)
+    domain_manager.db.flush()
+
+    with pytest.raises(DomainAlreadyExistsError):
+        domain_manager.create_domain(domain_create)
 
 
 def test_domain_manager_update_domain(db_model, domain_manager, unique):
@@ -61,5 +76,5 @@ def test_domain_manager_delete_domain(db_model, domain_manager, unique):
     domain = unique("domain")
     db_model(DomainModel, domain=domain)
     domain_manager.delete_domain(domain)
-    with pytest.raises(KeyError):
+    with pytest.raises(DomainNotFoundError):
         domain_manager.get_domain_details(domain)

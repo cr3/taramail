@@ -43,7 +43,8 @@ def test_api_mailboxes(api_session, unique):
     try:
         response = api_session.get(f"/api/mailboxes/{username}")
     finally:
-        api_session.delete(f"/api/domains/{username}")
+        api_session.delete(f"/api/mailboxes/{username}")
+        api_session.delete(f"/api/domains/{domain}")
 
     assert_that(response.json(), has_entries(username=username, name="test"))
 

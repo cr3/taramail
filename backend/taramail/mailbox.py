@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from attrs import Factory, define, field
 from sqlalchemy import or_
 from sqlalchemy.exc import NoResultFound
@@ -38,6 +40,22 @@ from taramail.store import (
 )
 
 
+class MailboxError(Exception):
+    """Base exception for mailbox errors."""
+
+
+class MailboxAlreadyExistsError(MailboxError):
+    """Raised when a mailbox already exists."""
+
+
+class MailboxNotFoundError(MailboxError):
+    """Raised when a mailbox is not found."""
+
+
+class MailboxValidationError(MailboxError):
+    """Raised when a mailbox is invalid."""
+
+
 @define(frozen=True)
 class MailboxManager:
 
@@ -57,7 +75,7 @@ class MailboxManager:
                 .one()
             )
         except NoResultFound as e:
-            raise KeyError(f"Mailbox not found: {username}") from e
+            raise MailboxNotFoundError(f"Mailbox for {username} is invalid") from e
 
         logs = (
             self.db.query(func.max(SaslLogModel.datetime), SaslLogModel.service)
@@ -101,11 +119,15 @@ class MailboxManager:
     def create_mailbox(self, mailbox_create: MailboxCreate):
         local_part = mailbox_create.local_part.lower().strip()
         if not local_part:
-            raise ValueError("local_part empty")
+            raise MailboxValidationError("local_part empty")
 
         domain = mailbox_create.domain.lower().strip()
         username = f"{local_part}@{domain}"
         # TODO: validate username as email
+        with suppress(NoResultFound):
+            self.db.query(MailboxModel).filter_by(kind="", username=username).one()
+            raise MailboxAlreadyExistsError(f"Mailbox already exists: {username}")
+
         name = mailbox_create.name or local_part
         name = name.lstrip("<").rstrip(">")
 
@@ -114,11 +136,12 @@ class MailboxManager:
 
         mailbox_data = self._get_mailbox_data(domain)
         if mailbox_data.count >= domain_data.mailboxes:
-            raise KeyError("Max mailbox exceeded")
+            raise MailboxValidationError(f"Max mailbox exceeded ({domain_data.mailboxes})")
         if quota > domain_data.maxquota:
-            raise KeyError("Mailbox quota exceeded")
+            raise MailboxValidationError(f"Mailbox quota ({quota}) exceeds the domain limit ({domain_data.maxquota})")
         if mailbox_data.quota + quota > domain_data.quota:
-            raise KeyError("Mailbox quota left exceeded")
+            quota_left = domain_data.quota - mailbox_data.quota
+            raise MailboxValidationError(f"Not enough quota left ({quota_left})")
 
         validate_passwords(mailbox_create.password, mailbox_create.password2)
         hashed_password = hash_password(mailbox_create.password)
@@ -212,11 +235,12 @@ class MailboxManager:
         if mailbox_update.quota is not None:
             domain_data = self._get_domain_data(details.domain)
             if mailbox_update.quota > domain_data.maxquota:
-                raise KeyError("Mailbox quota exceeded")
+                raise MailboxValidationError(f"Mailbox quota ({mailbox_update.quota}) exceeds the domain limit ({domain_data.maxquota})")
 
             mailbox_data = self._get_mailbox_data(details.domain)
             if mailbox_data.quota - details.quota + mailbox_update.quota > domain_data.quota:
-                raise KeyError("Mailbox quota left exceeded")
+                quota_left = domain_data.quota - mailbox_data.quota + details.quota
+                raise MailboxValidationError(f"Not enough quota left ({quota_left})")
 
             mailbox.quota = mailbox_update.quota
 

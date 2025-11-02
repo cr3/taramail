@@ -10,6 +10,22 @@ from taramail.store import Store
 from taramail.units import kebi
 
 
+class DKIMError(Exception):
+    """Base exception for DKIM errors."""
+
+
+class DKIMAlreadyExistsError(DKIMError):
+    """Raised when a DKIM domain already exists."""
+
+
+class DKIMNotFoundError(DKIMError):
+    """Raised when a DKIM domain is not found."""
+
+
+class DKIMValidationError(DKIMError):
+    """Raised when a DKIM domain is invalid."""
+
+
 class DKIMCreate(BaseModel):
 
     domain: str
@@ -44,12 +60,10 @@ class DKIMManager:
 
     def get_details(self, domain: str, privkey=False) -> DKIMDetails:
         """Get DKIM details for a domain."""
-        if not self._is_valid_domain_name(domain):
-            raise ValueError("DKIM domain invalid")
-
+        domain = self._validate_domain_name(domain)
         pubkey = self.store.hget("DKIM_PUB_KEYS", domain)
         if not pubkey:
-            raise KeyError("DKIM domain not found")
+            raise DKIMNotFoundError(f"DKIM key not found: {domain}")
 
         dkim_selector = self.store.hget("DKIM_SELECTORS", domain) or "dkim"
 
@@ -84,16 +98,10 @@ class DKIMManager:
         )
 
     def create_key(self, dkim_create: DKIMCreate) -> str:
-        dkim_selector = dkim_create.dkim_selector
-        if not self._is_valid_selector(dkim_selector):
-            raise ValueError("DKIM selector invalid")
-
-        domain = dkim_create.domain
-        if not self._is_valid_domain_name(domain):
-            raise ValueError("DKIM domain invalid")
-
+        dkim_selector = self._validate_selector(dkim_create.dkim_selector)
+        domain = self._validate_domain_name(dkim_create.domain)
         if self.store.hget("DKIM_PUB_KEYS", domain):
-            raise ValueError("DKIM domain already exists")
+            raise DKIMAlreadyExistsError(f"DKIM domain already exists: {domain}")
 
         key_size = dkim_create.key_size
         key_pair = self._generate_dkim_keypair(key_size)
@@ -114,9 +122,7 @@ class DKIMManager:
         """Duplicate DKIM key from one domain to another."""
         # Get source domain DKIM details
         from_domain_dkim = self.get_details(dkim_duplicate.from_domain, privkey=True)
-        to_domain = dkim_duplicate.to_domain
-        if not self._is_valid_domain_name(to_domain):
-            raise ValueError("DKIM target domain invalid")
+        to_domain = self._validate_domain_name(dkim_duplicate.to_domain)
 
         # Copy DKIM data
         self.store.hset("DKIM_PUB_KEYS", to_domain, from_domain_dkim.pubkey)
@@ -126,8 +132,7 @@ class DKIMManager:
 
     def delete_key(self, domain: str) -> None:
         """Delete DKIM keys for a domain."""
-        if not self._is_valid_domain_name(domain):
-            raise ValueError("DKIM domain invalid")
+        domain = self._validate_domain_name(domain)
 
         # Get selector before deleting
         selector = self.store.hget("DKIM_SELECTORS", domain)
@@ -138,15 +143,21 @@ class DKIMManager:
         if selector:
             self.store.hdel("DKIM_PRIV_KEYS", f"{selector}.{domain}")
 
-    def _is_valid_domain_name(self, domain: str) -> bool:
+    def _validate_domain_name(self, domain: str) -> str:
         """Validate domain name format."""
         pattern = r"^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,}$"
-        return re.match(pattern, domain) is not None
+        if not re.match(pattern, domain):
+            raise DKIMValidationError(f"Invalid domain name format: {domain}")
 
-    def _is_valid_selector(self, selector: str) -> bool:
+        return domain
+
+    def _validate_selector(self, selector: str) -> str:
         """Validate DKIM selector format."""
         # Allow alphanumeric characters, hyphens, underscores, and dots
-        return bool(re.match(r'^[a-zA-Z0-9\-_\.]+$', selector))
+        if not re.match(r'^[a-zA-Z0-9\-_\.]+$', selector):
+            raise DKIMValidationError(f"Invalid selector format: {selector}")
+
+        return selector
 
     def _generate_dkim_keypair(self, key_size) -> dict:
         """Generate a DKIM key pair with the specified key size."""

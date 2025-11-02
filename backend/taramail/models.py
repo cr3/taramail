@@ -143,25 +143,6 @@ class DomainModel(TimestampMixin, SQLModel):
 
     __tablename__ = "domain"
 
-    def validate(self):
-        if not self.defquota:
-            raise ValueError("mailbox defquota is empty")
-        if self.defquota > self.maxquota:
-            raise ValueError("mailbox defquota exceeds mailbox maxquota")
-        if not self.maxquota:
-            raise ValueError("mailbox maxquota is empty")
-        if self.maxquota > self.quota:
-            raise ValueError("mailbox quota exceeds domain quota")
-
-        if self.relay_all_recipients:
-            self.backupmx = True
-
-        if self.relay_unknown_only:
-            self.backupmx = True
-            self.relay_all_recipients = True
-
-        return self
-
 
 class FilterconfModel(TimestampMixin, SQLModel):
 

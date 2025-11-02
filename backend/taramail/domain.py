@@ -6,7 +6,11 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
 
 from taramail.db import DBSession
-from taramail.dkim import DKIMCreate, DKIMManager
+from taramail.dkim import (
+    DKIMAlreadyExistsError,
+    DKIMCreate,
+    DKIMManager,
+)
 from taramail.http import HTTPSession
 from taramail.models import (
     AliasDomainModel,
@@ -28,6 +32,22 @@ from taramail.store import (
     RedisStore,
     Store,
 )
+
+
+class DomainError(Exception):
+    """Base exception for domain errors."""
+
+
+class DomainAlreadyExistsError(DomainError):
+    """Raised when a domain already exists."""
+
+
+class DomainNotFoundError(DomainError):
+    """Raised when a domain is not found."""
+
+
+class DomainValidationError(DomainError):
+    """Raised when a domain is invalid."""
 
 
 @define(frozen=True)
@@ -52,7 +72,7 @@ class DomainManager:
         try:
             model = self.db.query(DomainModel).filter_by(domain=domain).one()
         except NoResultFound as e:
-            raise KeyError(f"Domain not found: {domain}") from e
+            raise DomainNotFoundError(f"Domain name {domain} is invalid") from e
 
         mailbox_data_domain = self._get_mailbox_data_domain(domain)
         sum_quota_in_use = self._get_sum_quota_in_use(domain)
@@ -98,7 +118,7 @@ class DomainManager:
     def create_domain(self, domain_create: DomainCreate):
         domain = domain_create.domain.lower().strip()
         if self.db.query(DomainModel).filter_by(domain=domain).count():
-            raise KeyError("domain exists already")
+            raise DomainAlreadyExistsError(f"Domain already exists: {domain}")
 
         model = DomainModel(
             domain=domain,
@@ -113,7 +133,8 @@ class DomainManager:
             relay_all_recipients=domain_create.relay_all_recipients,
             relay_unknown_only=domain_create.relay_unknown_only,
             active=domain_create.active,
-        ).validate()
+        )
+        model = self._validate_domain_model(model)
 
         self.db.query(SenderAclModel).filter(
             SenderAclModel.external == 1,
@@ -128,7 +149,8 @@ class DomainManager:
             dkim_selector=domain_create.dkim_selector,
             key_size=domain_create.key_size,
         )
-        self.dkim_manager.create_key(dkim_create)
+        with suppress(DKIMAlreadyExistsError):
+            self.dkim_manager.create_key(dkim_create)
 
         if domain_create.restart_sogo:
             self.dockerapi.post("/services/sogo/restart")
@@ -146,26 +168,26 @@ class DomainManager:
             if value is not None:
                 setattr(model, key, value)
 
-        model.validate()
+        model = self._validate_domain_model(model)
 
         mailbox_data = self._get_mailbox_data(domain)
         alias_data = self._get_alias_data(domain)
 
         if mailbox_data.biggest_mailbox > model.maxquota:
-            raise ValueError("max quota already used")
+            raise DomainValidationError(f"Mailbox quota must be greater or equal to {mailbox_data.biggest_mailbox}")
         if mailbox_data.quota_all > model.quota:
-            raise ValueError("domain quota already used")
+            raise DomainValidationError(f"Domain quota must be greater or equal to {mailbox_data.quota_all}")
         if mailbox_data.count > model.mailboxes:
-            raise ValueError("mailboxes already used")
+            raise DomainValidationError(f"Mailboxes must be greater or equal to {mailbox_data.count}")
         if alias_data.count > model.aliases:
-            raise ValueError("aliases already used")
+            raise DomainValidationError(f"Aliases must be greater or equal to {alias_data.count}")
 
         return model
 
     def delete_domain(self, domain):
         count = self.db.query(func.count(MailboxModel.username)).filter_by(domain=domain).scalar()
         if count:
-            raise ValueError("domain not empty")
+            raise DomainValidationError(f"Cannot remove non-empty domain {domain}")
 
         # TODO: cleanup dovecot
         self.db.query(DomainModel).filter_by(domain=domain).delete()
@@ -180,6 +202,8 @@ class DomainManager:
 
         self.store.hdel("DOMAIN_MAP", domain)
         self.store.hdel("RL_VALUE", domain)
+
+        self.dkim_manager.delete_key(domain)
 
     def _get_mailbox_data(self, domain):
         return (
@@ -240,3 +264,22 @@ class DomainManager:
             .filter(Quota2Model.username.in_(select(MailboxModel.username).filter_by(domain=domain)))
             .one()
         )
+
+    def _validate_domain_model(self, model):
+        if not model.defquota:
+            raise DomainValidationError("Default quota per mailbox cannot be empty")
+        if model.defquota > model.maxquota:
+            raise DomainValidationError(f"Default quota ({model.defquota}) exceeds max quota limit ({model.maxquota})")
+        if not model.maxquota:
+            raise DomainValidationError("Max quota per mailbox cannot be empty")
+        if model.maxquota > model.quota:
+            raise DomainValidationError(f"Max quota ({model.maxquota}) exceeds domain quota limit ({model.quota})")
+
+        if model.relay_all_recipients:
+            model.backupmx = True
+
+        if model.relay_unknown_only:
+            model.backupmx = True
+            model.relay_all_recipients = True
+
+        return model

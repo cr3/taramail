@@ -60,7 +60,7 @@ def compose_files(request):
                 return list(ordered_files)
 
         if directory == directory.parent:
-            raise KeyError("Docker compose file not found")
+            raise FileNotFoundError("Docker compose file not found")
 
         directory = directory.parent
 

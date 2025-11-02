@@ -12,6 +12,7 @@ from hamcrest import (
 from taramail.dkim import (
     DKIMCreate,
     DKIMDuplicate,
+    DKIMValidationError,
 )
 
 
@@ -48,8 +49,9 @@ def test_dkim_manager_add_keys_store(dkim_manager, unique):
 
 
 def test_dkim_manager_add_keys_invalid_selector(dkim_manager, unique):
+    """Creating a key with an invalid selector should raise."""
     create = DKIMCreate(domain=unique("domain"), dkim_selector="bad-selector!")
-    with pytest.raises(ValueError):
+    with pytest.raises(DKIMValidationError):
         dkim_manager.create_key(create)
 
 
