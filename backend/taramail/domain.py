@@ -24,6 +24,7 @@ from taramail.models import (
     SenderAclModel,
     SpamaliasModel,
 )
+from taramail.schema import DomainStr
 from taramail.store import (
     RedisStore,
     Store,
@@ -49,7 +50,7 @@ class DomainValidationError(DomainError):
 
 class DomainCreate(BaseModel):
 
-    domain: str
+    domain: DomainStr
     description: str = ""
     aliases: int = 400
     mailboxes: int = 10
@@ -74,7 +75,7 @@ class DomainDetails(BaseModel):
     msgs_total: int
     mboxes_in_domain: int
     mboxes_left: int
-    domain: str
+    domain: DomainStr
     description: str | None
     max_num_aliases_for_domain: int
     max_num_mboxes_for_domain: int
@@ -117,13 +118,13 @@ class DomainManager:
         takes_self=True,
     ))
 
-    def get_origin_domain(self, domain):
+    def get_origin_domain(self, domain: DomainStr) -> str:
         with suppress(NoResultFound):
             domain = self.db.query(AliasDomainModel).filter_by(alias_domain=domain).one().target_domain
 
         return domain
 
-    def get_domain_details(self, domain):
+    def get_domain_details(self, domain: DomainStr) -> DomainDetails:
         domain = self.get_origin_domain(domain)
         try:
             model = self.db.query(DomainModel).filter_by(domain=domain).one()
@@ -171,14 +172,13 @@ class DomainManager:
     def get_domains(self):
         return self.db.query(DomainModel).filter_by(active=True).all()
 
-    def create_domain(self, domain_create: DomainCreate):
-        domain = domain_create.domain.lower().strip()
-        if self.db.query(DomainModel).filter_by(domain=domain).count():
-            raise DomainAlreadyExistsError(f"Domain already exists: {domain}")
+    def create_domain(self, domain_create: DomainCreate) -> DomainModel:
+        if self.db.query(DomainModel).filter_by(domain=domain_create.domain).count():
+            raise DomainAlreadyExistsError(f"Domain already exists: {domain_create.domain}")
 
         model = DomainModel(
-            domain=domain,
-            description=domain_create.description or domain,
+            domain=domain_create.domain,
+            description=domain_create.description or domain_create.domain,
             aliases=domain_create.aliases,
             mailboxes=domain_create.mailboxes,
             defquota=domain_create.defquota,
@@ -213,7 +213,7 @@ class DomainManager:
 
         return model
 
-    def update_domain(self, domain, domain_update: DomainUpdate):
+    def update_domain(self, domain: DomainStr, domain_update: DomainUpdate) -> DomainModel:
         details = self.get_domain_details(domain)
         model = self.db.query(DomainModel).filter_by(domain=domain).one()
         model.mailboxes = details.max_num_mboxes_for_domain
@@ -240,7 +240,7 @@ class DomainManager:
 
         return model
 
-    def delete_domain(self, domain):
+    def delete_domain(self, domain: DomainStr):
         count = self.db.query(func.count(MailboxModel.username)).filter_by(domain=domain).scalar()
         if count:
             raise DomainValidationError(f"Cannot remove non-empty domain {domain}")
@@ -303,11 +303,12 @@ class DomainManager:
                 or_(
                     AliasModel.domain == domain,
                     AliasModel.domain.in_(
-                        self.db.query(AliasDomainModel.alias_domain).filter_by(target_domain=domain)
+                        select(AliasDomainModel.alias_domain)
+                        .filter_by(target_domain=domain)
                     ),
                 )
             )
-            .filter(AliasModel.address.not_in(self.db.query(MailboxModel.username)))
+            .filter(AliasModel.address.not_in(select(MailboxModel.username)))
             .one()
         )
 

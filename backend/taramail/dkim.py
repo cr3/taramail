@@ -1,11 +1,15 @@
 import base64
-import re
+from typing import Annotated
 
 from attrs import define
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
+from taramail.schema import DomainStr
 from taramail.store import Store
 from taramail.units import kebi
 
@@ -22,21 +26,17 @@ class DKIMNotFoundError(DKIMError):
     """Raised when a DKIM domain is not found."""
 
 
-class DKIMValidationError(DKIMError):
-    """Raised when a DKIM domain is invalid."""
-
-
 class DKIMCreate(BaseModel):
 
-    domain: str
-    dkim_selector: str = "dkim"
+    domain: DomainStr
+    dkim_selector: Annotated[str, Field("dkim", pattern=r"^[a-zA-Z0-9\-_\.]+$")]
     key_size: int = 2 * kebi
 
 
 class DKIMDuplicate(BaseModel):
 
-    from_domain: str
-    to_domain: str
+    from_domain: DomainStr
+    to_domain: DomainStr
 
 
 class DKIMDetails(BaseModel):
@@ -58,9 +58,8 @@ class DKIMManager:
         """Get all DKIM public keys."""
         return self.store.hgetall("DKIM_PUB_KEYS")
 
-    def get_details(self, domain: str, privkey=False) -> DKIMDetails:
+    def get_details(self, domain: DomainStr, privkey=False) -> DKIMDetails:
         """Get DKIM details for a domain."""
-        domain = self._validate_domain_name(domain)
         pubkey = self.store.hget("DKIM_PUB_KEYS", domain)
         if not pubkey:
             raise DKIMNotFoundError(f"DKIM key not found: {domain}")
@@ -98,21 +97,19 @@ class DKIMManager:
         )
 
     def create_key(self, dkim_create: DKIMCreate) -> str:
-        dkim_selector = self._validate_selector(dkim_create.dkim_selector)
-        domain = self._validate_domain_name(dkim_create.domain)
-        if self.store.hget("DKIM_PUB_KEYS", domain):
-            raise DKIMAlreadyExistsError(f"DKIM domain already exists: {domain}")
+        if self.store.hget("DKIM_PUB_KEYS", dkim_create.domain):
+            raise DKIMAlreadyExistsError(f"DKIM domain already exists: {dkim_create.domain}")
 
         key_size = dkim_create.key_size
         key_pair = self._generate_dkim_keypair(key_size)
         public_lines = key_pair["public"].splitlines()
         public_key = ''.join(public_lines[1:-1])  # remove header/footer
 
-        self.store.hset("DKIM_PUB_KEYS", domain, public_key)
-        self.store.hset("DKIM_SELECTORS", domain, dkim_selector)
+        self.store.hset("DKIM_PUB_KEYS", dkim_create.domain, public_key)
+        self.store.hset("DKIM_SELECTORS", dkim_create.domain, dkim_create.dkim_selector)
         self.store.hset(
             "DKIM_PRIV_KEYS",
-            f"{dkim_selector}.{domain}",
+            f"{dkim_create.dkim_selector}.{dkim_create.domain}",
             key_pair["private"],
         )
 
@@ -122,18 +119,15 @@ class DKIMManager:
         """Duplicate DKIM key from one domain to another."""
         # Get source domain DKIM details
         from_domain_dkim = self.get_details(dkim_duplicate.from_domain, privkey=True)
-        to_domain = self._validate_domain_name(dkim_duplicate.to_domain)
 
         # Copy DKIM data
-        self.store.hset("DKIM_PUB_KEYS", to_domain, from_domain_dkim.pubkey)
-        self.store.hset("DKIM_SELECTORS", to_domain, from_domain_dkim.dkim_selector)
-        self.store.hset("DKIM_PRIV_KEYS", f"{from_domain_dkim.dkim_selector}.{to_domain}",
+        self.store.hset("DKIM_PUB_KEYS", dkim_duplicate.to_domain, from_domain_dkim.pubkey)
+        self.store.hset("DKIM_SELECTORS", dkim_duplicate.to_domain, from_domain_dkim.dkim_selector)
+        self.store.hset("DKIM_PRIV_KEYS", f"{from_domain_dkim.dkim_selector}.{dkim_duplicate.to_domain}",
                         base64.b64decode(from_domain_dkim.privkey))
 
-    def delete_key(self, domain: str) -> None:
+    def delete_key(self, domain: DomainStr) -> None:
         """Delete DKIM keys for a domain."""
-        domain = self._validate_domain_name(domain)
-
         # Get selector before deleting
         selector = self.store.hget("DKIM_SELECTORS", domain)
 
@@ -143,23 +137,7 @@ class DKIMManager:
         if selector:
             self.store.hdel("DKIM_PRIV_KEYS", f"{selector}.{domain}")
 
-    def _validate_domain_name(self, domain: str) -> str:
-        """Validate domain name format."""
-        pattern = r"^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,}$"
-        if not re.match(pattern, domain):
-            raise DKIMValidationError(f"Invalid domain name format: {domain}")
-
-        return domain
-
-    def _validate_selector(self, selector: str) -> str:
-        """Validate DKIM selector format."""
-        # Allow alphanumeric characters, hyphens, underscores, and dots
-        if not re.match(r'^[a-zA-Z0-9\-_\.]+$', selector):
-            raise DKIMValidationError(f"Invalid selector format: {selector}")
-
-        return selector
-
-    def _generate_dkim_keypair(self, key_size) -> dict:
+    def _generate_dkim_keypair(self, key_size: int) -> dict:
         """Generate a DKIM key pair with the specified key size."""
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         private_pem = private_key.private_bytes(

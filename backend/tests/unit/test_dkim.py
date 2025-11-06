@@ -8,12 +8,24 @@ from hamcrest import (
     has_properties,
     starts_with,
 )
+from pydantic import ValidationError
 
 from taramail.dkim import (
     DKIMCreate,
     DKIMDuplicate,
-    DKIMValidationError,
 )
+
+
+def test_dkim_create_invalid_domain(dkim_manager):
+    """Specifying an invalid domain should raise."""
+    with pytest.raises(ValidationError):
+        DKIMCreate(domain="localhost")
+
+
+def test_dkim_create_invalid_selector(dkim_manager, unique):
+    """Specifying an invalid selector should raise."""
+    with pytest.raises(ValidationError):
+        DKIMCreate(domain=unique("domain"), dkim_selector="bad-selector!")
 
 
 def test_dkim_manager_get_details_without_privkey(dkim_manager, unique):
@@ -46,13 +58,6 @@ def test_dkim_manager_add_keys_store(dkim_manager, unique):
     assert store.hget("DKIM_PUB_KEYS", create.domain) == key
     assert store.hget("DKIM_SELECTORS", create.domain) == create.dkim_selector
     assert "BEGIN RSA PRIVATE KEY" in store.hget("DKIM_PRIV_KEYS", f"{create.dkim_selector}.{create.domain}")
-
-
-def test_dkim_manager_add_keys_invalid_selector(dkim_manager, unique):
-    """Creating a key with an invalid selector should raise."""
-    create = DKIMCreate(domain=unique("domain"), dkim_selector="bad-selector!")
-    with pytest.raises(DKIMValidationError):
-        dkim_manager.create_key(create)
 
 
 def test_dkim_manager_duplicate_keys(dkim_manager, unique):

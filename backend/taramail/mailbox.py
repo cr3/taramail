@@ -2,7 +2,13 @@ from contextlib import suppress
 from datetime import datetime as dt
 
 from attrs import Factory, define, field
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    ValidationInfo,
+    field_validator,
+)
 from sqlalchemy import or_
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
@@ -10,6 +16,7 @@ from sqlalchemy.sql import func
 from taramail.db import (
     DBSession,
 )
+from taramail.email import join_email
 from taramail.models import (
     AliasModel,
     BccMapsModel,
@@ -30,6 +37,7 @@ from taramail.password import (
     hash_password,
     validate_passwords,
 )
+from taramail.schema import DomainStr
 from taramail.sogo import Sogo
 from taramail.store import (
     RedisStore,
@@ -55,8 +63,8 @@ class MailboxValidationError(MailboxError):
 
 class MailboxCreate(BaseModel):
 
-    local_part: str
-    domain: str
+    local_part: str = Field(..., min_length=1)
+    domain: DomainStr
     password: str
     password2: str
     name: str = ""
@@ -87,12 +95,25 @@ class MailboxCreate(BaseModel):
     acl_quarantine_notification: bool = True
     acl_quarantine_category: bool = True
 
+    @field_validator("local_part", mode="before")
+    @classmethod
+    def strip_and_lower(cls, v: str, info: ValidationInfo) -> str:
+        v = v.lower().strip()
+        if not v:
+            raise ValueError(f"{info.field_name} cannot be empty or whitespace")
+        return v
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_brackets(cls, v: str, info: ValidationInfo) -> str:
+        return v.lstrip("<").rstrip(">")
+
 
 class MailboxDetails(BaseModel):
 
-    username: str
+    username: EmailStr
     active: bool
-    domain: str
+    domain: DomainStr
     name: str
     local_part: str
     quota: int
@@ -144,7 +165,7 @@ class MailboxManager:
         default=Factory(lambda self: Sogo(self.db), takes_self=True),
     )
 
-    def get_mailbox_details(self, username):
+    def get_mailbox_details(self, username: EmailStr) -> MailboxDetails:
         try:
             mailbox, quota2, attributes = (
                 self.db.query(MailboxModel, Quota2Model, UserAttributesModel)
@@ -195,25 +216,18 @@ class MailboxManager:
     def get_mailboxes(self):
         return self.db.query(MailboxModel).filter_by(active=True).all()
 
-    def create_mailbox(self, mailbox_create: MailboxCreate):
-        local_part = mailbox_create.local_part.lower().strip()
-        if not local_part:
-            raise MailboxValidationError("local_part empty")
-
-        domain = mailbox_create.domain.lower().strip()
-        username = f"{local_part}@{domain}"
+    def create_mailbox(self, mailbox_create: MailboxCreate) -> MailboxModel:
+        username = join_email(mailbox_create.local_part, mailbox_create.domain)
         # TODO: validate username as email
         with suppress(NoResultFound):
             self.db.query(MailboxModel).filter_by(kind="", username=username).one()
             raise MailboxAlreadyExistsError(f"Mailbox already exists: {username}")
 
-        name = mailbox_create.name or local_part
-        name = name.lstrip("<").rstrip(">")
-
-        domain_data = self._get_domain_data(domain)
+        name = mailbox_create.name or mailbox_create.local_part
+        domain_data = self._get_domain_data(mailbox_create.domain)
         quota = mailbox_create.quota or domain_data.defquota
 
-        mailbox_data = self._get_mailbox_data(domain)
+        mailbox_data = self._get_mailbox_data(mailbox_create.domain)
         if mailbox_data.count >= domain_data.mailboxes:
             raise MailboxValidationError(f"Max mailbox exceeded ({domain_data.mailboxes})")
         if quota > domain_data.maxquota:
@@ -229,8 +243,8 @@ class MailboxManager:
             username=username,
             password=hashed_password,
             name=name,
-            local_part=local_part,
-            domain=domain,
+            local_part=mailbox_create.local_part,
+            domain=mailbox_create.domain,
             quota=quota,
             active=mailbox_create.active,
         )
@@ -247,7 +261,7 @@ class MailboxManager:
         alias = AliasModel(
             address=username,
             goto=username,
-            domain=domain,
+            domain=mailbox_create.domain,
             active=mailbox_create.active,
         )
         user_acl = UserAclModel(
@@ -295,7 +309,7 @@ class MailboxManager:
 
         return mailbox
 
-    def update_mailbox(self, username, mailbox_update: MailboxUpdate):
+    def update_mailbox(self, username: EmailStr, mailbox_update: MailboxUpdate) -> MailboxModel:
         details = self.get_mailbox_details(username)
 
         # Update mailbox values.
@@ -335,7 +349,7 @@ class MailboxManager:
 
         return mailbox
 
-    def delete_mailbox(self, username):
+    def delete_mailbox(self, username: EmailStr) -> None:
         self.db.query(AliasModel).filter_by(goto=username).delete()
         # self.db.query(PushoverModel).filter_by(username=username).delete()
         self.db.query(QuarantineModel).filter_by(rcpt=username).delete()

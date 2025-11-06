@@ -39,9 +39,10 @@ def test_api_post_domains(db_model, api_app, unique):
     assert response.status_code == 200
 
 
-def test_api_put_domain(db_model, api_app):
+def test_api_put_domain(db_model, api_app, unique):
     """Putting a domain should update it from the attributes."""
-    domain_model = db_model(DomainModel, description="old")
+    domain = unique("domain")
+    domain_model = db_model(DomainModel, domain=domain, description="old")
     api_app.put(f"/api/domains/{domain_model.domain}", json={"description": "new"})
     response = api_app.get(f"/api/domains/{domain_model.domain}")
     assert_that(response.json(), has_entries(description="new"))

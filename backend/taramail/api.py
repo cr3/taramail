@@ -7,13 +7,15 @@ from typing import Annotated
 from fastapi import (
     Depends,
     FastAPI,
-    HTTPException,
     Request,
     Response,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import (
+    JSONResponse,
+)
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
+from pydantic import EmailStr
 
 from taramail.db import (
     DBSession,
@@ -27,7 +29,6 @@ from taramail.dkim import (
     DKIMDuplicate,
     DKIMManager,
     DKIMNotFoundError,
-    DKIMValidationError,
 )
 from taramail.domain import (
     DomainAlreadyExistsError,
@@ -51,6 +52,7 @@ from taramail.queue import (
     Queue,
     RedisQueue,
 )
+from taramail.schema import DomainStr
 from taramail.sogo import Sogo
 from taramail.store import (
     MemcachedStore,
@@ -107,7 +109,7 @@ def get_domains(manager: DomainManagerDep) -> list[str]:
 
 
 @app.get("/api/domains/{domain}")
-def get_domain(domain: str, manager: DomainManagerDep) -> DomainDetails:
+def get_domain(domain: DomainStr, manager: DomainManagerDep) -> DomainDetails:
     return manager.get_domain_details(domain)
 
 
@@ -119,7 +121,7 @@ def post_domain(create: DomainCreate, manager: DomainManagerDep) -> DomainDetail
 
 
 @app.put("/api/domains/{domain}")
-def put_domain(domain: str, update: DomainUpdate, manager: DomainManagerDep) -> DomainDetails:
+def put_domain(domain: DomainStr, update: DomainUpdate, manager: DomainManagerDep) -> DomainDetails:
     with db_transaction(manager.db):
         domain = manager.update_domain(domain, update)
 
@@ -127,7 +129,7 @@ def put_domain(domain: str, update: DomainUpdate, manager: DomainManagerDep) -> 
 
 
 @app.delete("/api/domains/{domain}")
-def delete_domain(domain: str, manager: DomainManagerDep) -> None:
+def delete_domain(domain: DomainStr, manager: DomainManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_domain(domain)
 
@@ -138,7 +140,7 @@ def get_mailboxes(manager: MailboxManagerDep) -> list[str]:
 
 
 @app.get("/api/mailboxes/{username}")
-def get_mailbox(username: str, manager: MailboxManagerDep) -> MailboxDetails:
+def get_mailbox(username: EmailStr, manager: MailboxManagerDep) -> MailboxDetails:
     return manager.get_mailbox_details(username)
 
 
@@ -150,7 +152,7 @@ def post_mailbox(create: MailboxCreate, manager: MailboxManagerDep) -> MailboxDe
 
 
 @app.put("/api/mailboxes/{username}")
-def put_mailbox(username: str, update: MailboxUpdate, manager: MailboxManagerDep) -> MailboxDetails:
+def put_mailbox(username: EmailStr, update: MailboxUpdate, manager: MailboxManagerDep) -> MailboxDetails:
     with db_transaction(manager.db):
         mailbox = manager.update_mailbox(username, update)
 
@@ -158,7 +160,7 @@ def put_mailbox(username: str, update: MailboxUpdate, manager: MailboxManagerDep
 
 
 @app.delete("/api/mailboxes/{username}")
-def delete_mailbox(username: str, manager: MailboxManagerDep) -> None:
+def delete_mailbox(username: EmailStr, manager: MailboxManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_mailbox(username)
 
@@ -169,7 +171,7 @@ def get_dkim_keys(manager: DKIMManagerDep) -> dict[str, str]:
 
 
 @app.get("/api/dkim/{domain}")
-def get_dkim_details(domain: str, manager: DKIMManagerDep) -> DKIMDetails:
+def get_dkim_details(domain: DomainStr, manager: DKIMManagerDep) -> DKIMDetails:
     return manager.get_details(domain)
 
 
@@ -186,7 +188,7 @@ def post_dkim_duplicate(duplicate: DKIMDuplicate, manager: DKIMManagerDep) -> DK
 
 
 @app.delete("/api/dkim/{domain}")
-def delete_dkim(domain: str, manager: DKIMManagerDep) -> None:
+def delete_dkim(domain: DomainStr, manager: DKIMManagerDep) -> None:
     manager.delete_key(domain)
 
 
@@ -197,16 +199,9 @@ def get_sogo_auth(response: Response) -> None:
     response.headers["X-Auth-Type"] = ""
 
 
-@app.get("/rspamd/error")
-def get_rspamd_error(request: Request, queue: QueueDep) -> None:
-    queue.publish("F2B_CHANNEL", f"Rspamd UI: Invalid password by {request.client.host}")
-    raise HTTPException(401, "Invalid password")
-
-
 error_handlers = {
     DKIMAlreadyExistsError: 409,
     DKIMNotFoundError: 404,
-    DKIMValidationError: 400,
     DomainAlreadyExistsError: 409,
     DomainNotFoundError: 404,
     DomainValidationError: 400,

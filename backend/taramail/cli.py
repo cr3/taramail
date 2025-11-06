@@ -167,7 +167,8 @@ def main(argv=None):
     try:
         data = args.func(session, vars(args))
     except RequestException as e:
-        parser.error(e)
+        message = e.response.json()
+        parser.error(message.get('detail') or message['error'])
 
     output = json.dumps(data, indent=2)
     args.output.write(output)
