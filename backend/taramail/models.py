@@ -67,7 +67,8 @@ class AliasModel(TimestampMixin, SQLModel):
     private_comment: Mapped[str | None] = mapped_column(Text)
     public_comment: Mapped[str | None] = mapped_column(Text)
     sogo_visible: Mapped[bool] = mapped_column(server_default="1")
-    active: Mapped[bool] = mapped_column(server_default="0")
+    internal: Mapped[bool] = mapped_column(server_default="0")
+    active: Mapped[bool] = mapped_column(server_default="1")
 
     __tablename__ = "alias"
     __table_args__ = (
