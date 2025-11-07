@@ -19,7 +19,7 @@ def test_http_session_request(method):
         status=200,
     )
 
-    session = HTTPSession.with_origin("http://localhost/")
+    session = HTTPSession("http://localhost/")
     result = session.request(method, "a")
     assert result.status_code == 200
 
@@ -33,7 +33,7 @@ def test_http_session_get():
         status=200,
     )
 
-    session = HTTPSession.with_origin("http://localhost/")
+    session = HTTPSession("http://localhost/")
     result = session.get("a")
     assert result.status_code == 200
 
@@ -55,6 +55,6 @@ def test_http_session_origin(origin, path):
         status=200,
     )
 
-    session = HTTPSession.with_origin(origin)
+    session = HTTPSession(origin)
     result = session.request("GET", path)
     assert result.status_code == 200

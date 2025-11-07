@@ -18,9 +18,9 @@ HTTP_METHODS = {
 class HTTPSession(Session):
     """An HTTP session with origin."""
 
-    def __init__(self, origin: URL, timeout=60, **kwargs):
+    def __init__(self, origin: URL | str, timeout=60, **kwargs):
         super().__init__(**kwargs)
-        self.origin = origin
+        self.origin = URL(origin)
         self.timeout = timeout
 
     def __repr__(self):
@@ -29,12 +29,6 @@ class HTTPSession(Session):
             origin=self.origin,
             timeout=self.timeout,
         )
-
-    @classmethod
-    def with_origin(cls, origin: str | URL):
-        """Make sure the origin has a single trailing slash."""
-        url = URL(origin)
-        return cls(url)
 
     def request(self, method: str, path: str, **kwargs):
         """Send an HTTP request.

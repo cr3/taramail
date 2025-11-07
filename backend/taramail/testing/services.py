@@ -87,7 +87,7 @@ def api_service(compose_server):
 @pytest.fixture(scope="session")
 def api_session(api_service):
     """API HTTP session to the service fixture."""
-    return HTTPSession.with_origin(f"http://{api_service.ip}/")
+    return HTTPSession(f"http://{api_service.ip}/")
 
 
 @pytest.fixture(scope="session")
@@ -117,7 +117,7 @@ def dockerapi_service(compose_server):
 @pytest.fixture(scope="session")
 def dockerapi_session(dockerapi_service):
     """Dockerapi HTTP session to the service fixture."""
-    return HTTPSession.with_origin(f"http://{dockerapi_service.ip}/")
+    return HTTPSession(f"http://{dockerapi_service.ip}/")
 
 
 @pytest.fixture(scope="session")

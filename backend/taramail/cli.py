@@ -156,7 +156,7 @@ def main(argv=None):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     parser = make_args_parser()
-    session = HTTPSession.with_origin(api_url)
+    session = HTTPSession(api_url)
     try:
         schema = get_openapi_schema(session)
     except RequestException as e:
