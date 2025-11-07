@@ -2,6 +2,7 @@
 
 from hamcrest import (
     assert_that,
+    contains_string,
     has_entries,
     starts_with,
 )
@@ -62,3 +63,9 @@ def test_api_dkim(api_session, unique):
         api_session.delete(f"/api/dkim/{domain}")
 
     assert_that(response.json(), has_entries(dkim_selector="dkim", dkim_txt=starts_with("v=DKIM")))
+
+
+def test_rspamd_settings(api_session):
+    """The API should expose rspamd settings."""
+    response = api_session.get("/rspamd/settings")
+    assert_that(response.text, contains_string("monit"))

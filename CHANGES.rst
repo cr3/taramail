@@ -1,9 +1,10 @@
 Version 0.3.0
 -------------
 
-Released 2025-10-21
+Released 2025-11-07
 
 -   Add DKIM support.
+-   Add dynamic Rspamd settings.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
 -   Move frontend to taram.

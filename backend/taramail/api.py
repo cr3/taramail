@@ -1,7 +1,6 @@
 """API service."""
 
 import logging
-from functools import partial
 from typing import Annotated
 
 from fastapi import (
@@ -18,9 +17,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import EmailStr
 
 from taramail.db import (
-    DBSession,
     db_transaction,
-    get_db_session,
+)
+from taramail.deps import (
+    DbDep,
+    MemcachedDep,
+    StoreDep,
 )
 from taramail.dkim import (
     DKIMAlreadyExistsError,
@@ -48,17 +50,9 @@ from taramail.mailbox import (
     MailboxUpdate,
     MailboxValidationError,
 )
-from taramail.queue import (
-    Queue,
-    RedisQueue,
-)
+from taramail.rspamd.router import router as rspamd_router
 from taramail.schema import DomainStr
 from taramail.sogo import Sogo
-from taramail.store import (
-    MemcachedStore,
-    RedisStore,
-    Store,
-)
 
 logger = logging.getLogger("uvicorn")
 app = FastAPI(
@@ -66,21 +60,6 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-
-async def get_db():
-    with get_db_session() as db:
-        yield db
-
-DbDep = Annotated[DBSession, Depends(get_db)]
-
-get_queue = RedisQueue.from_env
-QueueDep = Annotated[Queue, Depends(get_queue)]
-
-get_store = RedisStore.from_env
-StoreDep = Annotated[Store, Depends(get_store)]
-
-get_memcached = partial(MemcachedStore.from_host, "memcached")
-MemcachedDep = Annotated[Store, Depends(get_memcached)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
@@ -228,6 +207,8 @@ async def exception_handler(request: Request, exc: Exception):
         content={"error": "Unhandled exception"},
     )
 
+
+app.include_router(rspamd_router)
 
 app.mount("/docs", StaticFiles(directory="./build/html", html=True, check_dir=False))
 

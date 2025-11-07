@@ -2,7 +2,13 @@
 
 from textwrap import dedent
 
-import requests
+from hamcrest import equal_to
+from pytest_xdocker.retry import (
+    calling,
+    retry,
+)
+
+from taramail.http import HTTPSession
 
 
 def test_rspamd_service(rspamd_service):
@@ -13,6 +19,10 @@ def test_rspamd_service(rspamd_service):
 
         Empty
     """)
-    response = requests.post(f"http://{rspamd_service.ip}:11333/scan", data=email, timeout=10)
+    http_session = HTTPSession(f"http://{rspamd_service.ip}:11333/")
 
-    assert response.json()["default"]["required_score"] == 9999.0
+    def scan(_http_session=http_session):
+        response = _http_session.post("/scan", data=email)
+        return response.json()["default"]["required_score"]
+
+    retry(calling(scan)).until(equal_to(9999.0))

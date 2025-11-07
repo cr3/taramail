@@ -1,0 +1,171 @@
+# Generated dynamically
+# Timestamp: {{ now }}
+
+settings {
+  monit {
+    priority = 10;
+    rcpt_mime = "/null@localhost/i";
+    from_mime = "/monit@localhost/i";
+    apply "default" {
+      symbols_disabled = ["HISTORY_SAVE", "ARC", "ARC_SIGNED", "DKIM", "DKIM_SIGNED", "CLAM_VIRUS"];
+      want_spam = yes;
+      actions {
+        reject = 9999.0;
+        greylist = 9998.0;
+        "add header" = 9997.0;
+      }
+    }
+  }
+}
+
+{# --- Custom scores per object (domain/mailbox) --- #}
+{% for block in custom_scores %}
+score_{{ block.username_sane }} {
+  priority = 4;
+{% for rcpt in block.rcpts %}
+  rcpt = {{ rcpt|tojson }};
+{% endfor %}
+  apply "default" {
+    actions {
+      reject = {{ block.reject }};
+      greylist = {{ block.greylist }};
+      "add header" = {{ block.add_header }};
+    }
+  }
+}
+{% endfor %}
+
+{# --- SOGo contacts whitelist (priority 4) --- #}
+{% for user, contacts in sogo_wl.items() %}
+{% set username_sane = user|regex_replace('[^a-zA-Z0-9]+', '') %}
+whitelist_sogo_{{ username_sane }} {
+{% for contact in contacts %}
+  from = "/^{{ contact|e }}$/i";
+{% endfor %}
+  priority = 4;
+  apply "default" {
+    MAIL_WHITE = -999.0;
+  }
+  symbols [
+    "MAIL_WHITE"
+  ]
+}
+{% endfor %}
+
+{# --- General whitelist (domain/mailbox) --- #}
+{% for w in whitelist_blocks %}
+whitelist_{{ w.username_sane }} {
+{% for f in w.from_list %}
+  from = "/{{ f }}/i";
+{% endfor %}
+{% for fm in w.from_mime_list %}
+  from_mime = "/{{ fm }}/i";
+{% endfor %}
+  priority = {{ w.priority }};
+{% for rcpt in w.rcpts %}
+  rcpt = {{ rcpt|tojson }};
+{% endfor %}
+  apply "default" {
+    MAIL_WHITE = -999.0;
+  }
+  symbols [
+    "MAIL_WHITE"
+  ]
+}
+{% if w.from_mime_list %}
+whitelist_mime_{{ w.username_sane }} {
+{% for fm in w.from_mime_list %}
+  from_mime = "/{{ fm }}/i";
+{% endfor %}
+  priority = {{ w.priority }};
+{% for rcpt in w.rcpts %}
+  rcpt = {{ rcpt|tojson }};
+{% endfor %}
+  apply "default" {
+    MAIL_WHITE = -999.0;
+  }
+  symbols [
+    "MAIL_WHITE"
+  ]
+}
+{% endif %}
+{% endfor %}
+
+{# --- General blacklist (domain/mailbox) --- #}
+{% for b in blacklist_blocks %}
+blacklist_{{ b.username_sane }} {
+{% for f in b.from_list %}
+  from = "/{{ f }}/i";
+{% endfor %}
+{% for fm in b.from_mime_list %}
+  from_mime = "/{{ fm }}/i";
+{% endfor %}
+  priority = {{ b.priority }};
+{% for rcpt in b.rcpts %}
+  rcpt = {{ rcpt|tojson }};
+{% endfor %}
+  apply "default" {
+    MAIL_BLACK = 999.0;
+  }
+  symbols [
+    "MAIL_BLACK"
+  ]
+}
+{% if b.from_mime_list %}
+blacklist_mime_{{ b.username_sane }} {
+{% for fm in b.from_mime_list %}
+  from_mime = "/{{ fm }}/i";
+{% endfor %}
+  priority = {{ b.priority }};
+{% for rcpt in b.rcpts %}
+  rcpt = {{ rcpt|tojson }};
+{% endfor %}
+  apply "default" {
+    MAIL_BLACK = 999.0;
+  }
+  symbols [
+    "MAIL_BLACK"
+  ]
+}
+{% endif %}
+{% endfor %}
+
+# --- Traps ---
+ham_trap {
+  rcpt = "/^ham\+.*@localhost$/i";
+  priority = 9;
+  apply "default" {
+    symbols_enabled = ["HISTORY_SAVE"];
+  }
+  symbols [
+    "HAM_TRAP"
+  ]
+}
+
+spam_trap {
+  rcpt = "/^spam\+.*@localhost$/i";
+  priority = 9;
+  apply "default" {
+    symbols_enabled = ["HISTORY_SAVE"];
+  }
+  symbols [
+    "SPAM_TRAP"
+  ]
+}
+
+# --- Internal-only aliases: block external senders ---
+group "internal_aliases" {
+{% for al in internal_aliases %}
+  rule "internal_alias_{{ loop.index }}" {
+    priority = 10;
+    rcpt = "{{ al }}";
+    from = "/^((?!.*@({{ allowed_domains_regex }})).)*$/";
+    apply "default" {
+      MAIL_INTERNAL_ALIAS = 9999.0;
+    }
+    symbols [
+      "MAIL_INTERNAL_ALIAS"
+    ]
+  }
+{% endfor %}
+}
