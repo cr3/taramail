@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     TextClause,
+    inspect,
     text,
 )
 from sqlalchemy.ext.compiler import compiles
@@ -31,7 +32,18 @@ from sqlalchemy.sql import func
 
 from taramail.units import gibi
 
-SQLModel = declarative_base()
+
+class ReprMixin:
+
+    def __repr__(self):
+        mapper = inspect(self.__class__)
+        attrs = [
+            f"{n}={getattr(self, n)!r}"
+            for n, c in mapper.columns.items()
+        ]
+        return f"<{self.__class__.__name__}({', '.join(attrs)})>"
+
+SQLModel = declarative_base(cls=ReprMixin)
 
 
 @compiles(DateTime, "sqlite")
