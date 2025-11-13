@@ -26,7 +26,7 @@ from taramail.models import (
     SogoFolderInfoModel,
     SogoQuickContactModel,
 )
-from taramail.schema import DomainStr
+from taramail.schemas import DomainStr
 
 
 @dataclass

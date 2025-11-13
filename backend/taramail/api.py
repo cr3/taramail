@@ -16,9 +16,7 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from pydantic import EmailStr
 
-from taramail.db import (
-    db_transaction,
-)
+from taramail.db import db_transaction
 from taramail.deps import (
     DbDep,
     MemcachedDep,
@@ -51,7 +49,7 @@ from taramail.mailbox import (
     MailboxValidationError,
 )
 from taramail.rspamd.router import router as rspamd_router
-from taramail.schema import DomainStr
+from taramail.schemas import DomainStr
 from taramail.sogo import Sogo
 
 logger = logging.getLogger("uvicorn")
@@ -115,7 +113,7 @@ def delete_domain(domain: DomainStr, manager: DomainManagerDep) -> None:
 
 @app.get("/api/mailboxes")
 def get_mailboxes(manager: MailboxManagerDep) -> list[str]:
-    return [d.username for d in manager.get_mailboxes()]
+    return [m.username for m in manager.get_mailboxes()]
 
 
 @app.get("/api/mailboxes/{username}")

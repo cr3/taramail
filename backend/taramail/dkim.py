@@ -9,7 +9,7 @@ from pydantic import (
     Field,
 )
 
-from taramail.schema import DomainStr
+from taramail.schemas import DomainStr
 from taramail.store import Store
 from taramail.units import kebi
 

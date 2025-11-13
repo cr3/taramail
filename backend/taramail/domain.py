@@ -32,7 +32,7 @@ from taramail.models import (
     SenderAclModel,
     SpamaliasModel,
 )
-from taramail.schema import DomainStr
+from taramail.schemas import DomainStr
 from taramail.store import (
     RedisStore,
     Store,

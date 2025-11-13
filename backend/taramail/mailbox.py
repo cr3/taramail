@@ -39,7 +39,7 @@ from taramail.password import (
     hash_password,
     validate_passwords,
 )
-from taramail.schema import DomainStr
+from taramail.schemas import DomainStr
 from taramail.sogo import Sogo
 from taramail.store import (
     RedisStore,
