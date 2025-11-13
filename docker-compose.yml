@@ -22,7 +22,9 @@ services:
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
     networks:
-      - network
+      network:
+        aliases:
+          - api
     command: >
       bash -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
@@ -49,7 +51,9 @@ services:
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
     networks:
-      - network
+      network:
+        aliases:
+          - certbot
     command: >
       sh -c "trap exit TERM; while :; do
         certbot renew --webroot --webroot-path=/var/www/html --deploy-hook /deploy-hook.sh;
@@ -74,7 +78,9 @@ services:
       - ./clamd/freshclam.conf:/etc/clamav/freshclam.conf:ro,Z
       - clamd-vol-1:/var/lib/clamav
     networks:
-      - network
+      network:
+        aliases:
+          - clamd
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -86,7 +92,9 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taramail}
     networks:
-      - network
+      network:
+        aliases:
+          - dockerapi
     command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --log-config=/app/log-config.yaml
     restart: always
     dns:
@@ -148,6 +156,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.250
+        aliases:
+          - dovecot
     restart: always
     labels:
       ofelia.enabled: "true"
@@ -209,7 +219,9 @@ services:
     ports:
       - '${MONIT_PORT:-127.0.0.1:2812}:2812'
     networks:
-      - network
+      network:
+        aliases:
+          - monit
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -232,7 +244,9 @@ services:
     ports:
       - '${SQL_PORT:-127.0.0.1:13306}:3306'
     networks:
-      - network
+      network:
+        aliases:
+          - mysql
     restart: always
     healthcheck:
       test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
@@ -290,6 +304,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.240
+        aliases:
+          - nginx
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -326,6 +342,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.253
+        aliases:
+          - postfix
     restart: always
     cap_add:
       - NET_BIND_SERVICE
@@ -344,6 +362,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
+        aliases:
+          - redis
     command: redis-server /redis.conf
     entrypoint: /docker-entrypoint.sh
     restart: always
@@ -353,6 +373,8 @@ services:
   rspamd:
     build: rspamd
     depends_on:
+      api:
+        condition: service_healthy
       clamd:
         condition: service_started
       dovecot:
@@ -368,7 +390,9 @@ services:
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
     networks:
-      - network
+      network:
+        aliases:
+          - rspamd
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -406,6 +430,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.248
+        aliases:
+          - sogo
     restart: always
     labels:
       ofelia.enabled: "true"
@@ -427,6 +453,8 @@ services:
     networks:
       network:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
+        aliases:
+          - unbound
     restart: always
 
 networks:
