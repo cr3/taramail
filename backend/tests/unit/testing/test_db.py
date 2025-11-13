@@ -1,7 +1,16 @@
 """Unit tests for the model testing module."""
 
 import pytest
-from hamcrest import assert_that, has_length, has_properties, is_
+from hamcrest import (
+    assert_that,
+    has_length,
+    has_properties,
+    is_,
+)
+from sqlalchemy import (
+    delete,
+    select,
+)
 
 from ...models import (
     DefaultTest,
@@ -61,11 +70,11 @@ def test_db_model_foreign_key_relationship_skip_create(db_model, db_session):
     Which worked because sql alchemy ignores the relation_id if the relation
     is given.
     """
-    db_session.query(DefaultTest).delete()  # Clean slate
+    db_session.execute(delete(DefaultTest))  # Clean slate
 
     relation = db_model(DefaultTest)
 
     db_model(ForeignKeyTest, value=relation)
 
     # Should not have created another DefaultTest
-    assert_that(db_session.query(DefaultTest).all(), has_length(1))
+    assert_that(db_session.scalars(select(DefaultTest)).all(), has_length(1))

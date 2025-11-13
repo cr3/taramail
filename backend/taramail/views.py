@@ -45,16 +45,30 @@ class GroupedMailAliasesView(SQLViewMixin, SQLModel):
         GROUP BY goto;
     """
 
-    selectable = (
+    _base = (
         select(
             AliasModel.goto.label("username"),
-            func.coalesce(func.group_concat(AliasModel.address), "").label("aliases"),
+            AliasModel.address.label("address"),
         )
-        .filter_by(address=AliasModel.goto)
-        .filter_by(active=True)
-        .filter_by(sogo_visible=True)
-        .filter(AliasModel.address.not_like("@%"))
-        .group_by(AliasModel.goto)
+        .where(
+            AliasModel.address != AliasModel.goto,
+            AliasModel.active == 1,
+            AliasModel.sogo_visible == 1,
+            ~AliasModel.address.like("@%"),
+        )
+        .order_by(AliasModel.address)
+        .subquery()
+    )
+
+    selectable = (
+        select(
+            _base.c.username,
+            func.coalesce(
+                func.replace(func.group_concat(_base.c.address), ",", " "),
+                ""
+            ).label("aliases"),
+        )
+        .group_by(_base.c.username)
     )
 
     __table__ = create_view(
@@ -110,7 +124,7 @@ class GroupedSenderAclView(SQLViewMixin, SQLModel):
             SenderAclModel.logged_in_as.label("username"),
             func.coalesce(func.group_concat(SenderAclModel.send_as), "").label("send_as_acl"),
         )
-        .filter(SenderAclModel.send_as.not_like("@%"))
+        .where(SenderAclModel.send_as.not_like("@%"))
         .group_by(SenderAclModel.logged_in_as)
     )
 
@@ -136,8 +150,10 @@ class GroupedSenderAclExternalView(SQLViewMixin, SQLModel):
             SenderAclModel.logged_in_as.label("username"),
             func.coalesce(func.group_concat(SenderAclModel.send_as), "").label("send_as_acl"),
         )
-        .filter(SenderAclModel.send_as.not_like("@%"))
-        .filter_by(external=True)
+        .where(
+            SenderAclModel.send_as.not_like("@%"),
+            SenderAclModel.external == 1,
+        )
         .group_by(SenderAclModel.logged_in_as)
     )
 
@@ -165,7 +181,9 @@ class SieveBeforeView(SQLViewMixin, SQLModel):
             SieveFiltersModel.script_name,
             SieveFiltersModel.script_data,
         )
-        .filter_by(filter_type="prefilter")
+        .where(
+            SieveFiltersModel.filter_type == "prefilter",
+        )
     )
 
     __table__ = create_view(
@@ -192,7 +210,9 @@ class SieveAfterView(SQLViewMixin, SQLModel):
             SieveFiltersModel.script_name,
             SieveFiltersModel.script_data,
         )
-        .filter_by(filter_type="postfilter")
+        .where(
+            SieveFiltersModel.filter_type == "postfilter",
+        )
     )
 
     __table__ = create_view(

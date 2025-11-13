@@ -1,4 +1,4 @@
-from contextlib import suppress
+import re
 from datetime import datetime as dt
 
 from attrs import Factory, define, field
@@ -9,13 +9,15 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
-from sqlalchemy import or_
+from sqlalchemy import (
+    delete,
+    or_,
+    select,
+)
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.sql import func
 
-from taramail.db import (
-    DBSession,
-)
+from taramail.db import DBSession
 from taramail.email import join_email
 from taramail.models import (
     AliasModel,
@@ -167,22 +169,20 @@ class MailboxManager:
 
     def get_mailbox_details(self, username: EmailStr) -> MailboxDetails:
         try:
-            mailbox, quota2, attributes = (
-                self.db.query(MailboxModel, Quota2Model, UserAttributesModel)
-                .filter_by(kind="", username=username)
+            mailbox, quota2, attributes = self.db.execute(
+                select(MailboxModel, Quota2Model, UserAttributesModel)
+                .where(MailboxModel.kind == "", MailboxModel.username == username)
                 .join(Quota2Model, Quota2Model.username == MailboxModel.username)
                 .join(UserAttributesModel, UserAttributesModel.username == MailboxModel.username)
-                .one()
-            )
+            ).one()
         except NoResultFound as e:
             raise MailboxNotFoundError(f"Mailbox for {username} is invalid") from e
 
-        logs = (
-            self.db.query(func.max(SaslLogModel.datetime), SaslLogModel.service)
-            .filter_by(username=username)
+        logs = self.db.execute(
+            select(func.max(SaslLogModel.datetime), SaslLogModel.service)
+            .where(SaslLogModel.username == username)
             .order_by(SaslLogModel.service.desc())
-            .all()
-        )
+        ).all()
         last_logins = {service: datetime for datetime, service in logs}
 
         # TODO: ratelimit
@@ -213,14 +213,23 @@ class MailboxManager:
             last_sso_login=last_logins.get("SSO"),
         )
 
-    def get_mailboxes(self):
-        return self.db.query(MailboxModel).filter_by(active=True).all()
+    def get_mailboxes(self) -> list[MailboxModel]:
+        return self.db.scalars(
+            select(MailboxModel)
+            .where(MailboxModel.active == 1)
+        ).all()
 
     def create_mailbox(self, mailbox_create: MailboxCreate) -> MailboxModel:
         username = join_email(mailbox_create.local_part, mailbox_create.domain)
         # TODO: validate username as email
-        with suppress(NoResultFound):
-            self.db.query(MailboxModel).filter_by(kind="", username=username).one()
+        if self.db.scalar(
+            select(MailboxModel)
+            .where(
+                MailboxModel.kind == "",
+                MailboxModel.username == username,
+            )
+            .limit(1)
+        ):
             raise MailboxAlreadyExistsError(f"Mailbox already exists: {username}")
 
         name = mailbox_create.name or mailbox_create.local_part
@@ -313,12 +322,19 @@ class MailboxManager:
         details = self.get_mailbox_details(username)
 
         # Update mailbox values.
-        mailbox = self.db.query(MailboxModel).filter_by(username=username).one()
+        mailbox = self.db.scalars(
+            select(MailboxModel)
+            .where(MailboxModel.username == username)
+        ).one()
         if mailbox_update.name is not None:
             mailbox.name = mailbox_update.name
 
         if mailbox_update.active is not None:
-            self.db.query(AliasModel).filter_by(username=username).update({"active": mailbox_update.active})
+            alias = self.db.scalars(
+                select(AliasModel)
+                .where(AliasModel.address == username)
+            ).one()
+            alias.active = mailbox_update.active
             mailbox.active = mailbox_update.active
 
         if mailbox_update.password:
@@ -338,7 +354,10 @@ class MailboxManager:
             mailbox.quota = mailbox_update.quota
 
         # Update mailbox attributes.
-        attributes = self.db.query(UserAttributesModel).filter_by(username=username).one()
+        attributes = self.db.scalars(
+            select(UserAttributesModel)
+            .where(UserAttributesModel.username == username)
+        ).one()
         for key, value in mailbox_update.model_dump().items():
             if value is not None and hasattr(attributes, key):
                 setattr(attributes, key, value)
@@ -350,23 +369,29 @@ class MailboxManager:
         return mailbox
 
     def delete_mailbox(self, username: EmailStr) -> None:
-        self.db.query(AliasModel).filter_by(goto=username).delete()
-        # self.db.query(PushoverModel).filter_by(username=username).delete()
-        self.db.query(QuarantineModel).filter_by(rcpt=username).delete()
-        self.db.query(Quota2Model).filter_by(username=username).delete()
-        self.db.query(Quota2ReplicaModel).filter_by(username=username).delete()
-        self.db.query(MailboxModel).filter_by(username=username).delete()
-        self.db.query(SenderAclModel).filter(
+        self.db.execute(delete(AliasModel).where(AliasModel.goto == username))
+        # self.db.execute(delete(PushoverModel).where(PushoverModel.username == username))
+        self.db.execute(delete(QuarantineModel).where(QuarantineModel.rcpt == username))
+        self.db.execute(delete(Quota2Model).where(Quota2Model.username == username))
+        self.db.execute(delete(Quota2ReplicaModel).where(Quota2ReplicaModel.username == username))
+        self.db.execute(delete(MailboxModel).where(MailboxModel.username == username))
+        self.db.execute(delete(SenderAclModel).where(
             or_(
                 SenderAclModel.logged_in_as == username,
                 SenderAclModel.send_as == username,
             )
-        ).delete()
-        self.db.query(UserAclModel).filter_by(username=username).delete()
-        self.db.query(SpamaliasModel).filter_by(goto=username).delete()
-        self.db.query(ImapsyncModel).filter_by(user2=username).delete()
-        self.db.query(FilterconfModel).filter_by(object=username).delete()
-        self.db.query(BccMapsModel).filter_by(local_dest=username).delete()
+        ))
+        self.db.execute(delete(UserAclModel).where(UserAclModel.username == username))
+        self.db.execute(delete(SpamaliasModel).where(SpamaliasModel.goto == username))
+        self.db.execute(delete(ImapsyncModel).where(ImapsyncModel.user2 == username))
+        self.db.execute(delete(FilterconfModel).where(FilterconfModel.object == username))
+        self.db.execute(delete(BccMapsModel).where(BccMapsModel.local_dest == username))
+
+        for alias in self.db.scalars(
+            select(AliasModel)
+            .where(AliasModel.goto.op("REGEXP")(f"(^|,){re.escape(username)}($|,)"))
+        ).all():
+            alias.goto = ",".join([a for a in alias.goto.split(",") if a != username])
 
         self.sogo.delete_user(username)
         self.sogo.update_static_view(username)
@@ -374,18 +399,21 @@ class MailboxManager:
         self.store.hdel("RL_VALUE", username)
 
         # TODO: oauth
-        # TODO: update aliases
 
-    def _get_mailbox_data(self, domain):
-        return (
-            self.db.query(
+    def _get_mailbox_data(self, domain: DomainStr):
+        return self.db.execute(
+            select(
                 func.count(MailboxModel.username).label("count"),
                 func.coalesce(func.sum(MailboxModel.quota), 0).label("quota"),
             )
-            .filter_by(kind="")
-            .filter_by(domain=domain)
-            .one()
-        )
+            .where(
+                MailboxModel.kind == "",
+                MailboxModel.domain == domain,
+            )
+        ).one()
 
-    def _get_domain_data(self, domain):
-        return self.db.query(DomainModel).filter_by(domain=domain).one()
+    def _get_domain_data(self, domain: DomainStr):
+        return self.db.scalars(
+            select(DomainModel)
+            .where(DomainModel.domain == domain)
+        ).one()

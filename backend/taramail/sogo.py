@@ -2,10 +2,20 @@
 
 from functools import partial
 
-from attrs import define, field
-from sqlalchemy import insert, select
+from attrs import (
+    define,
+    field,
+)
+from sqlalchemy import (
+    delete,
+    insert,
+    select,
+)
 from sqlalchemy.dialects.mysql import insert as mysql_insert
-from sqlalchemy.sql import case, func
+from sqlalchemy.sql import (
+    case,
+    func,
+)
 
 from taramail.db import DBSession
 from taramail.models import (
@@ -79,7 +89,11 @@ class Sogo:
             .where(MailboxModel.active.is_(True))
         )
 
-        if self.db.query(MailboxModel).filter_by(username=mailbox).count():
+        if self.db.scalar(
+            select(MailboxModel)
+            .where(MailboxModel.username == mailbox)
+            .limit(1)
+        ):
             select_stmt = select_stmt.where(MailboxModel.username == mailbox)
         else:
             select_stmt = select_stmt.group_by(MailboxModel.username)
@@ -130,27 +144,25 @@ class Sogo:
 
         self.db.execute(upsert_stmt)
 
-        self.db.query(SogoStaticView).filter(
-            SogoStaticView.c_uid.not_in(select(MailboxModel.username).filter_by(active=True))
-        ).delete()
+        self.db.execute(
+            delete(SogoStaticView)
+            .where(
+                SogoStaticView.c_uid.not_in(
+                    select(MailboxModel.username)
+                    .where(MailboxModel.active == 1),
+                ),
+            )
+        )
 
         self.memcached.flushall()
 
     def delete_user(self, username):
-        self.db.query(SogoUserProfileModel).filter_by(c_uid=username).delete()
-        self.db.query(SogoCacheFolderModel).filter_by(c_uid=username).delete()
+        self.db.execute(delete(SogoUserProfileModel).where(SogoUserProfileModel.c_uid == username))
+        self.db.execute(delete(SogoCacheFolderModel).where(SogoCacheFolderModel.c_uid == username))
         # TODO: Also delete by c_object
-        self.db.query(SogoAclModel).filter_by(c_uid=username).delete()
-        folder_ids = select(SogoFolderInfoModel.c_folder_id).where(
-            SogoFolderInfoModel.c_path2 == username
-        )
-        self.db.query(SogoStoreModel).filter(
-            SogoStoreModel.c_folder_id.in_(folder_ids),
-        ).delete()
-        self.db.query(SogoQuickContactModel).filter(
-            SogoQuickContactModel.c_folder_id.in_(folder_ids),
-        ).delete()
-        self.db.query(SogoQuickAppointmentModel).filter(
-            SogoQuickAppointmentModel.c_folder_id.in_(folder_ids),
-        ).delete()
-        self.db.query(SogoFolderInfoModel).filter_by(c_path2=username).delete()
+        self.db.execute(delete(SogoAclModel).where(SogoAclModel.c_uid == username))
+        folder_ids = select(SogoFolderInfoModel.c_folder_id).where(SogoFolderInfoModel.c_path2 == username)
+        self.db.execute(delete(SogoStoreModel).where(SogoStoreModel.c_folder_id.in_(folder_ids)))
+        self.db.execute(delete(SogoQuickContactModel).where(SogoQuickContactModel.c_folder_id.in_(folder_ids)))
+        self.db.execute(delete(SogoQuickAppointmentModel).where(SogoQuickAppointmentModel.c_folder_id.in_(folder_ids)))
+        self.db.execute(delete(SogoFolderInfoModel).where(SogoFolderInfoModel.c_path2 == username))

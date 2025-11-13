@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
+from sqlalchemy import select
 
 from taramail.models import (
     AliasDomainModel,
@@ -27,7 +28,7 @@ def test_sogo_update_static_view_password(force_pw_update, sogo_access, expected
     mailbox = db_model(MailboxModel, password="original")
     db_model(UserAttributesModel, username=mailbox.username, force_pw_update=force_pw_update, sogo_access=sogo_access)
     Sogo(db_session, Mock(), default_password="default").update_static_view(mailbox.username)
-    result = db_session.query(SogoStaticView).one()
+    result = db_session.scalars(select(SogoStaticView)).one()
     assert result.c_password == expected
 
 
@@ -36,5 +37,5 @@ def test_sogo_update_static_view_aliases(db_model, db_session, unique):
     mailbox = db_model(MailboxModel)
     alias = db_model(AliasDomainModel, target_domain=mailbox.domain)
     Sogo(db_session, Mock()).update_static_view("a@b.com")
-    result = db_session.query(SogoStaticView).one()
+    result = db_session.scalars(select(SogoStaticView)).one()
     assert result.ad_aliases == f"{mailbox.local_part}@{alias.alias_domain}"

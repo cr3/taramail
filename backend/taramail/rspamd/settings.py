@@ -180,7 +180,7 @@ class RspamdSettings:
     def get_blocks(self, option_from: str, option_from_mime: str) -> list[RspamdListBlock]:
         blocks = []
 
-        obj_rows = self.db.execute(
+        obj_rows = self.db.scalars(
             select(FilterconfModel.object)
             .where(
                 or_(
@@ -188,7 +188,7 @@ class RspamdSettings:
                     FilterconfModel.option == option_from_mime,
                 )
             ).distinct()
-        ).scalars().all()
+        ).all()
 
         for obj in obj_rows:
             priority = 6 if is_email(obj) else 5
