@@ -20,7 +20,7 @@ from taramail.models import (
     SogoFolderInfoModel,
     SogoQuickContactModel,
 )
-from taramail.rspamd.settings import RspamdSettings
+from taramail.rspamd import RspamdSettings
 
 
 def test_rspamd_get_allowed_domains_regex(db_model, db_session, unique):

@@ -1,11 +1,14 @@
 """API service."""
 
 import logging
+import re
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import (
     Depends,
     FastAPI,
+    HTTPException,
     Request,
     Response,
 )
@@ -14,6 +17,12 @@ from fastapi.responses import (
 )
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    select_autoescape,
+)
 from pydantic import EmailStr
 
 from taramail.alias import (
@@ -29,6 +38,7 @@ from taramail.db import db_transaction
 from taramail.deps import (
     DbDep,
     MemcachedDep,
+    QueueDep,
     StoreDep,
 )
 from taramail.dkim import (
@@ -57,7 +67,7 @@ from taramail.mailbox import (
     MailboxUpdate,
     MailboxValidationError,
 )
-from taramail.rspamd.router import router as rspamd_router
+from taramail.rspamd import RspamdSettings
 from taramail.schemas import (
     AliasStr,
     DomainStr,
@@ -70,16 +80,23 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+env = Environment(
+    loader=FileSystemLoader(Path(__file__).with_name("templates")),
+    autoescape=select_autoescape(["j2"]),
+)
+env.filters["regex_replace"] = lambda s, p, r: re.sub(p, r, s)
+templates = Jinja2Templates(env=env)
 
-def get_alias_manager(db: DbDep):
-    return AliasManager(db)
-
-AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
 
 SogoDep = Annotated[Sogo, Depends(get_sogo)]
+
+def get_alias_manager(db: DbDep):
+    return AliasManager(db)
+
+AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
 
 def get_dkim_manager(store: StoreDep):
     return DKIMManager(store)
@@ -95,6 +112,11 @@ def get_mailbox_manager(db: DbDep, store: StoreDep, sogo: SogoDep):
     return MailboxManager(db, store, sogo)
 
 MailboxManagerDep = Annotated[MailboxManager, Depends(get_mailbox_manager)]
+
+def get_rspamd_service(db: DbDep):
+    return RspamdSettings(db)
+
+RspamdSettingsDep = Annotated[RspamdSettings, Depends(get_rspamd_service)]
 
 
 @app.get("/api/domains")
@@ -217,6 +239,25 @@ def delete_dkim(domain: DomainStr, manager: DKIMManagerDep) -> None:
     manager.delete_key(domain)
 
 
+@app.api_route("/rspamd/settings", methods=["GET", "HEAD"])
+def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Response:
+    return templates.TemplateResponse("rspamd_settings.j2", {
+        "request": request,
+        "allowed_domains_regex": settings.get_allowed_domains_regex(),
+        "internal_aliases": settings.get_internal_aliases(),
+        "custom_scores": settings.get_custom_scores(),
+        "sogo_wl": settings.get_sogo_wl(),
+        "whitelist_blocks": settings.get_blocks("whitelist_from", "whitelist_from_mime"),
+        "blacklist_blocks": settings.get_blocks("blacklist_from", "blacklist_from_mime"),
+    })
+
+
+@app.get("/rspamd/error")
+def get_rspamd_error(request: Request, queue: QueueDep) -> None:
+    queue.publish("F2B_CHANNEL", f"Rspamd UI: Invalid password by {request.client.host}")
+    raise HTTPException(401, "Invalid password")
+
+
 @app.get("/sogo-auth")
 def get_sogo_auth(response: Response) -> None:
     response.headers["X-User"] = ""
@@ -256,8 +297,6 @@ async def exception_handler(request: Request, exc: Exception):
         content={"error": "Unhandled exception"},
     )
 
-
-app.include_router(rspamd_router)
 
 app.mount("/docs", StaticFiles(directory="./build/html", html=True, check_dir=False))
 
