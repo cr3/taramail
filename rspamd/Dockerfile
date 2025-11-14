@@ -3,7 +3,7 @@ FROM debian:${DEBIAN_RELEASE}-slim
 
 ARG DEBIAN_RELEASE
 ARG DEBIAN_FRONTEND=noninteractive
-ARG RSPAMD_VER=rspamd_3.11.0-1~90a175b45
+ARG RSPAMD_VER=rspamd_3.13.2-1~8bf602278
 ENV LC_ALL=C
 
 RUN apt-get update && apt-get install -y \
