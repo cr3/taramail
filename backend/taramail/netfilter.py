@@ -186,7 +186,7 @@ class NetfilterTables:
 
             elif position > 0:
                 logger.critical(
-                    "Target is in position %(position)s in the %(self.family)s %(chain)s table, restarting container to"
+                    "Target is in position %(position)s in the %(family)s %(chain)s table, restarting container to"
                     " fix it...",
                     {
                         "chain": chain,
