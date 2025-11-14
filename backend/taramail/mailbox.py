@@ -70,7 +70,7 @@ class MailboxCreate(BaseModel):
     password: str
     password2: str
     name: str = ""
-    quota: int = 0
+    quota: int | None = None
     quarantine_notification: str = "hourly"
     quarantine_category: str = "reject"
     active: bool = True
@@ -181,7 +181,7 @@ class MailboxManager:
         logs = self.db.execute(
             select(func.max(SaslLogModel.datetime), SaslLogModel.service)
             .where(SaslLogModel.username == username)
-            .order_by(SaslLogModel.service.desc())
+            .group_by(SaslLogModel.service)
         ).all()
         last_logins = {service: datetime for datetime, service in logs}
 
