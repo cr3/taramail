@@ -26,7 +26,6 @@ def domain(domain_manager, unique):
     domain = unique("domain")
     domain_create = DomainCreate(domain=domain)
     domain_manager.create_domain(domain_create)
-    domain_manager.db.flush()
 
     return domain
 

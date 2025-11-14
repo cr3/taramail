@@ -11,7 +11,10 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import (
+    IntegrityError,
+    NoResultFound,
+)
 from sqlalchemy.sql import func
 
 from taramail.db import DBSession
@@ -193,13 +196,6 @@ class DomainManager:
         ).all()
 
     def create_domain(self, domain_create: DomainCreate) -> DomainModel:
-        if self.db.scalar(
-            select(DomainModel)
-            .where(DomainModel.domain == domain_create.domain)
-            .limit(1)
-        ):
-            raise DomainAlreadyExistsError(f"Domain already exists: {domain_create.domain}")
-
         model = DomainModel(
             domain=domain_create.domain,
             description=domain_create.description or domain_create.domain,
@@ -215,6 +211,11 @@ class DomainManager:
             active=domain_create.active,
         )
         model = self._validate_domain_model(model)
+        self.db.add(model)
+        try:
+            self.db.flush()
+        except IntegrityError as e:
+            raise DomainAlreadyExistsError(f"Domain already exists: {domain_create.domain}") from e
 
         self.db.execute(
             delete(SenderAclModel)
@@ -223,7 +224,6 @@ class DomainManager:
                 SenderAclModel.send_as.like(f"%@{model.domain}"),
             )
         )
-        self.db.add(model)
 
         self.store.hset("DOMAIN_MAP", model.domain, 1)
 
