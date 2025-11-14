@@ -896,7 +896,7 @@ class NetfilterService:
         while not self.exit_now:
             time.sleep(10)
             try:
-                self.chain_order()
+                self.netfilter.chain_order()
             except NetfilterError:
                 self.exit_now = True
                 self.exit_code = 2
