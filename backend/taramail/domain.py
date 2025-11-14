@@ -151,8 +151,8 @@ class DomainManager:
         mailbox_data_domain = self._get_mailbox_data_domain(domain)
         sum_quota_in_use = self._get_sum_quota_in_use(domain)
 
-        max_new_mailbox_quota = max(model.quota - mailbox_data_domain.in_use, model.maxquota)
-        def_new_mailbox_quota = max(max_new_mailbox_quota, model.defquota)
+        max_new_mailbox_quota = min(model.quota - mailbox_data_domain.in_use, model.maxquota)
+        def_new_mailbox_quota = min(max_new_mailbox_quota, model.defquota)
         quota_used_in_domain = mailbox_data_domain.in_use
         bytes_total = sum_quota_in_use.bytes_total or 0
         msgs_total = sum_quota_in_use.msgs_total or 0
