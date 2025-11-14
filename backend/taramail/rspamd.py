@@ -29,6 +29,11 @@ from taramail.models import (
 from taramail.schemas import DomainStr
 
 
+def escape_slash(s):
+    """Convenience function to escape a slash with a backslash."""
+    return s.replace("/", "\\/")
+
+
 @dataclass
 class RspamdScoreBlock:
     username_sane: str
@@ -135,8 +140,8 @@ class RspamdSettings:
         for addr in std_aliases:
             with suppress(InvalidEmail):
                 local_part, domain = split_email(addr)
-                rcpts.append(f"/^{local_part.replace('/', '\\/')}[+].*{domain.replace('/', '\\/')}$/i")
-            rcpts.append(addr.replace("/", "\\/"))
+                rcpts.append(f"/^{escape_slash(local_part)}[+].*{escape_slash(domain)}$/i")
+            rcpts.append(escape_slash(addr))
 
         # Aliases by alias domains
         adq = self.db.scalars(
@@ -149,8 +154,8 @@ class RspamdSettings:
             if alias_addr:
                 with suppress(InvalidEmail):
                     local_part, domain = split_email(alias_addr)
-                    rcpts.append(f"/^{local_part.replace('/', '\\/')}[+].*{domain.replace('/', '\\/')}$/i")
-                rcpts.append(alias_addr.replace("/", "\\/"))
+                    rcpts.append(f"/^{escape_slash(local_part)}[+].*{escape_slash(domain)}$/i")
+                rcpts.append(escape_slash(alias_addr))
 
         return rcpts
 
@@ -172,8 +177,8 @@ class RspamdSettings:
         for addr in std:
             with suppress(InvalidEmail):
                 local_part, domain = split_email(addr)
-                rcpts.append(f"/^{local_part.replace('/', '\\/')}[+].*{domain.replace('/', '\\/')}$/i")
-            rcpts.append(addr.replace("/", "\\/"))
+                rcpts.append(f"/^{escape_slash(local_part)}[+].*{escape_slash(domain)}$/i")
+            rcpts.append(escape_slash(addr))
 
         return rcpts
 
