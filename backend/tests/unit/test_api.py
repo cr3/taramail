@@ -13,19 +13,20 @@ from hamcrest import (
 )
 
 from taramail.models import (
+    AliasModel,
     DomainModel,
     MailboxModel,
 )
 
 
-def test_api_get_domains(db_model, api_app):
+def test_api_domains_get(db_model, api_app):
     """Getting domains should return the list of domains."""
     domain_model = db_model(DomainModel)
     response = api_app.get("/api/domains")
     assert_that(response.json(), has_item(domain_model.domain))
 
 
-def test_api_post_domains(db_model, api_app, unique):
+def test_api_domains_post(api_app, unique):
     """Posting a domain should create the domain in the api."""
     domain = unique("domain")
     api_app.post("/api/domains", json={
@@ -39,7 +40,7 @@ def test_api_post_domains(db_model, api_app, unique):
     assert response.status_code == 200
 
 
-def test_api_put_domain(db_model, api_app, unique):
+def test_api_domains_put(db_model, api_app, unique):
     """Putting a domain should update it from the attributes."""
     domain = unique("domain")
     domain_model = db_model(DomainModel, domain=domain, description="old")
@@ -48,7 +49,7 @@ def test_api_put_domain(db_model, api_app, unique):
     assert_that(response.json(), has_entries(description="new"))
 
 
-def test_api_delete_domain(api_app, unique):
+def test_api_domains_delete(api_app, unique):
     """Deleting a domain should delete it from the list of domains."""
     domain = unique("domain")
     api_app.post("/api/domains", json={
@@ -60,14 +61,14 @@ def test_api_delete_domain(api_app, unique):
     assert response.status_code == 404
 
 
-def test_api_get_mailboxes(db_model, api_app):
+def test_api_mailboxes_get(db_model, api_app):
     """Getting mailboxes should return the list of mailboxes."""
     mailbox_model = db_model(MailboxModel)
     response = api_app.get("/api/mailboxes")
     assert_that(response.json(), has_item(mailbox_model.username))
 
 
-def test_api_post_mailboxes(db_model, api_app, unique):
+def test_api_mailboxes_post(api_app, unique):
     """Posting a mailbox should create the mailbox in the api."""
     local_part = unique("text")
     domain = unique("domain")
@@ -85,6 +86,76 @@ def test_api_post_mailboxes(db_model, api_app, unique):
     })
     response = api_app.get(f"/api/mailboxes/{username}")
     assert response.status_code == 200
+
+
+def test_api_aliases_get(db_model, api_app, unique):
+    """Getting aliases should return the list of aliases for a domain."""
+    domain = unique("domain")
+    alias_model = db_model(AliasModel, domain=domain)
+    response = api_app.get(f"/api/aliases?domain={domain}")
+    assert_that(response.json(), has_item(alias_model.address))
+
+
+def test_api_aliases_post(api_app, unique):
+    """Posting an alias should create the alias in the api."""
+    domain = unique("domain")
+    address, goto = unique("email", domain=domain), unique("email")
+    api_app.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+    response = api_app.post("/api/aliases", json={
+        "address": address,
+        "goto": goto,
+    })
+    response = api_app.get(f"/api/aliases/{address}")
+    assert response.status_code == 200
+
+
+def test_api_aliases_put(api_app, unique):
+    """Putting an alias should update it from the attributes."""
+    domain = unique("domain")
+    address, goto = unique("email", domain=domain), unique("email")
+    api_app.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+    api_app.post("/api/aliases", json={
+        "address": address,
+        "goto": goto,
+    })
+    api_app.put(f"/api/aliases/{address}", json={
+        "internal": True,
+        "active": False,
+        "sogo_visible": False,
+        "private_comment": "private",
+        "public_comment": "public",
+    })
+    response = api_app.get(f"/api/aliases/{address}")
+    assert_that(response.json(), has_entries(
+        internal=True,
+        active=False,
+        sogo_visible=False,
+        private_comment="private",
+        public_comment="public",
+    ))
+
+
+def test_api_aliases_delete(api_app, unique):
+    """Deleting an alias should delete it from the list of aliases."""
+    domain = unique("domain")
+    address, goto = unique("email", domain=domain), unique("email")
+    api_app.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+    api_app.post("/api/aliases", json={
+        "address": address,
+        "goto": goto,
+    })
+    api_app.delete(f"/api/aliases/{address}")
+    response = api_app.get(f"/api/aliases/{address}")
+    assert response.status_code == 404
 
 
 def test_api_get_dkim_keys(api_app, unique):

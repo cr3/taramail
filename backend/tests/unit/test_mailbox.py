@@ -1,8 +1,15 @@
 """Unit tests for the mailbox module."""
 
 import pytest
+from hamcrest import (
+    assert_that,
+    contains_exactly,
+    has_properties,
+)
 
+from taramail.alias import AliasCreate
 from taramail.domain import DomainCreate
+from taramail.email import join_email
 from taramail.mailbox import (
     MailboxAlreadyExistsError,
     MailboxCreate,
@@ -108,8 +115,8 @@ def test_mailbox_manager_update_mailbox_attributes(domain, mailbox_manager, uniq
     assert result.sogo_access is False
 
 
-def test_mailox_manager_delete_mailbox(domain, mailbox_manager, unique):
-    """Deleting a domain should delete it from everywhere."""
+def test_mailox_manager_delete_mailbox(domain, alias_manager, mailbox_manager, unique):
+    """Deleting a domain should delete it from everywhere, including aliases."""
     local_part, password = unique("text"), unique("password")
     mailbox_create = MailboxCreate(
         local_part=local_part,
@@ -120,6 +127,17 @@ def test_mailox_manager_delete_mailbox(domain, mailbox_manager, unique):
     mailbox = mailbox_manager.create_mailbox(mailbox_create)
     mailbox_manager.db.flush()
 
+    address, external = unique("email", domain=domain), unique("email")
+    goto = join_email(local_part, domain)
+    alias_create = AliasCreate(
+        address=address,
+        goto=",".join([goto, external])
+    )
+    alias_manager.create_alias(alias_create)
+    alias_manager.db.flush()
+
     mailbox_manager.delete_mailbox(mailbox.username)
+    aliases = alias_manager.get_aliases(domain)
+    assert_that(aliases, contains_exactly(has_properties(goto=external)))
     with pytest.raises(MailboxNotFoundError):
         mailbox_manager.get_mailbox_details(mailbox.username)

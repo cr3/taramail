@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from taramail.alias import AliasManager
 from taramail.dkim import DKIMManager
 from taramail.domain import DomainManager
 from taramail.mailbox import MailboxManager
@@ -20,6 +21,12 @@ def sogo(db_session, memcached_store):
 def dkim_manager(redis_store):
     """DKIM manager fixture."""
     return DKIMManager(redis_store)
+
+
+@pytest.fixture
+def alias_manager(db_session):
+    """Alias manager fixture."""
+    return AliasManager(db_session)
 
 
 @pytest.fixture

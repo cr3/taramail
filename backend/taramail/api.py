@@ -16,6 +16,15 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from pydantic import EmailStr
 
+from taramail.alias import (
+    AliasAlreadyExistsError,
+    AliasCreate,
+    AliasDetails,
+    AliasManager,
+    AliasNotFoundError,
+    AliasUpdate,
+    AliasValidationError,
+)
 from taramail.db import db_transaction
 from taramail.deps import (
     DbDep,
@@ -49,7 +58,10 @@ from taramail.mailbox import (
     MailboxValidationError,
 )
 from taramail.rspamd.router import router as rspamd_router
-from taramail.schemas import DomainStr
+from taramail.schemas import (
+    AliasStr,
+    DomainStr,
+)
 from taramail.sogo import Sogo
 
 logger = logging.getLogger("uvicorn")
@@ -58,6 +70,11 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+
+def get_alias_manager(db: DbDep):
+    return AliasManager(db)
+
+AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
@@ -142,6 +159,37 @@ def delete_mailbox(username: EmailStr, manager: MailboxManagerDep) -> None:
         manager.delete_mailbox(username)
 
 
+@app.get("/api/aliases")
+def get_aliases(domain: DomainStr, manager: AliasManagerDep) -> list[str]:
+    return [a.address for a in manager.get_aliases(domain)]
+
+
+@app.get("/api/aliases/{address}")
+def get_alias(address: AliasStr, manager: AliasManagerDep) -> AliasDetails:
+    return manager.get_alias_details(address)
+
+
+@app.post("/api/aliases")
+def post_alias(create: AliasCreate, manager: AliasManagerDep) -> AliasDetails:
+    with db_transaction(manager.db):
+        alias = manager.create_alias(create)
+    return manager.get_alias_details(alias.address)
+
+
+@app.put("/api/aliases/{address}")
+def put_alias(address: AliasStr, update: AliasUpdate, manager: AliasManagerDep) -> AliasDetails:
+    with db_transaction(manager.db):
+        alias = manager.update_alias(address, update)
+
+    return manager.get_alias_details(alias.address)
+
+
+@app.delete("/api/aliases/{address}")
+def delete_alias(address: AliasStr, manager: AliasManagerDep) -> None:
+    with db_transaction(manager.db):
+        manager.delete_alias(address)
+
+
 @app.get("/api/dkim")
 def get_dkim_keys(manager: DKIMManagerDep) -> dict[str, str]:
     return manager.get_keys()
@@ -177,6 +225,9 @@ def get_sogo_auth(response: Response) -> None:
 
 
 error_handlers = {
+    AliasAlreadyExistsError: 409,
+    AliasNotFoundError: 404,
+    AliasValidationError: 400,
     DKIMAlreadyExistsError: 409,
     DKIMNotFoundError: 404,
     DomainAlreadyExistsError: 409,

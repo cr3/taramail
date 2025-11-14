@@ -50,6 +50,28 @@ def test_api_mailboxes(api_session, unique):
     assert_that(response.json(), has_entries(username=username, name="test"))
 
 
+def test_api_aliases(api_session, unique):
+    """The API should expose an aliases API."""
+    domain = unique("domain")
+    address = unique("email", domain=domain)
+    api_session.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+    response = api_session.post("/api/aliases", json={
+        "address": address,
+        "goto_null": True,
+    })
+    api_session.put(f"/api/aliases/{address}", json={"private_comment": "test"})
+    try:
+        response = api_session.get(f"/api/aliases/{address}")
+    finally:
+        api_session.delete(f"/api/aliases/{address}")
+        api_session.delete(f"/api/domains/{domain}")
+
+    assert_that(response.json(), has_entries(address=address, private_comment="test"))
+
+
 def test_api_dkim(api_session, unique):
     """The API should expose a DKIM API."""
     unique("text")

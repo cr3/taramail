@@ -3,6 +3,7 @@ Version 0.3.0
 
 Released 2025-11-07
 
+-   Add alias support.
 -   Add DKIM support.
 -   Add dynamic Rspamd settings.
 -   Move DynDNS to taramux.
