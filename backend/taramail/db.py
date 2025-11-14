@@ -41,6 +41,6 @@ def db_transaction(db: DBSession) -> Iterator[DBSession]:
     try:
         yield db
         db.commit()
-    except:
+    except Exception:
         db.rollback()
         raise
