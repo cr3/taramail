@@ -70,7 +70,7 @@ class DomainCreate(BaseModel):
     quota: int = 100 * gibi
     active: bool = True
     gal: bool = True
-    backupmx: int = False
+    backupmx: bool = False
     relay_all_recipients: bool = False
     relay_unknown_only: bool = False
     dkim_selector: str = "dkim"
@@ -113,7 +113,7 @@ class DomainUpdate(BaseModel):
     quota: int | None = None
     active: bool | None = None
     gal: bool | None = None
-    backupmx: int | None = None
+    backupmx: bool | None = None
     relay_all_recipients: bool | None = None
     relay_unknown_only: bool | None = None
 
