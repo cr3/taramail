@@ -87,6 +87,18 @@ def test_api_dkim(api_session, unique):
     assert_that(response.json(), has_entries(dkim_selector="dkim", dkim_txt=starts_with("v=DKIM")))
 
 
+def test_api_password_policy(api_session, unique):
+    """The API should expose a DKIM API."""
+    response = api_session.put("/api/password_policy", json={
+        "length": 1,
+    })
+    assert_that(response.json(), has_entries(length=1))
+
+    api_session.delete("/api/password_policy")
+    response = api_session.get("/api/password_policy")
+    assert_that(response.json(), has_entries(length=8))
+
+
 def test_rspamd_settings(api_session):
     """The API should expose rspamd settings."""
     response = api_session.get("/rspamd/settings")

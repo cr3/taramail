@@ -67,6 +67,12 @@ from taramail.mailbox import (
     MailboxUpdate,
     MailboxValidationError,
 )
+from taramail.password import (
+    PasswordPolicy,
+    PasswordPolicyManager,
+    PasswordPolicyUpdate,
+    PasswordValidationError,
+)
 from taramail.rspamd import RspamdSettings
 from taramail.schemas import (
     AliasStr,
@@ -88,11 +94,6 @@ env.filters["regex_replace"] = lambda s, p, r: re.sub(p, r, s)
 templates = Jinja2Templates(env=env)
 
 
-def get_sogo(db: DbDep, memcached: MemcachedDep):
-    return Sogo(db, memcached)
-
-SogoDep = Annotated[Sogo, Depends(get_sogo)]
-
 def get_alias_manager(db: DbDep):
     return AliasManager(db)
 
@@ -108,15 +109,25 @@ def get_domain_manager(db: DbDep, store: StoreDep):
 
 DomainManagerDep = Annotated[DomainManager, Depends(get_domain_manager)]
 
-def get_mailbox_manager(db: DbDep, store: StoreDep, sogo: SogoDep):
-    return MailboxManager(db, store, sogo)
+def get_mailbox_manager(db: DbDep, password_policy_manager: "PasswordPolicyManagerDep", store: StoreDep, sogo: "SogoDep"):
+    return MailboxManager(db, store, password_policy_manager, sogo)
 
 MailboxManagerDep = Annotated[MailboxManager, Depends(get_mailbox_manager)]
 
-def get_rspamd_service(db: DbDep):
+def get_password_policy_manager(store: StoreDep):
+    return PasswordPolicyManager(store)
+
+PasswordPolicyManagerDep = Annotated[PasswordPolicyManager, Depends(get_password_policy_manager)]
+
+def get_rspamd_settings(db: DbDep):
     return RspamdSettings(db)
 
-RspamdSettingsDep = Annotated[RspamdSettings, Depends(get_rspamd_service)]
+RspamdSettingsDep = Annotated[RspamdSettings, Depends(get_rspamd_settings)]
+
+def get_sogo(db: DbDep, memcached: MemcachedDep):
+    return Sogo(db, memcached)
+
+SogoDep = Annotated[Sogo, Depends(get_sogo)]
 
 
 @app.get("/api/domains")
@@ -239,6 +250,21 @@ def delete_dkim(domain: DomainStr, manager: DKIMManagerDep) -> None:
     manager.delete_key(domain)
 
 
+@app.get("/api/password_policy")
+def get_password_policy(manager: PasswordPolicyManagerDep) -> PasswordPolicy:
+    return manager.get_policy()
+
+
+@app.put("/api/password_policy")
+def put_password_policy(policy_update: PasswordPolicyUpdate, manager: PasswordPolicyManagerDep) -> PasswordPolicy:
+    return manager.update_policy(policy_update)
+
+
+@app.delete("/api/password_policy")
+def delete_password_policy(manager: PasswordPolicyManagerDep) -> None:
+    manager.reset_policy()
+
+
 @app.api_route("/rspamd/settings", methods=["GET", "HEAD"])
 def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Response:
     return templates.TemplateResponse("rspamd_settings.j2", {
@@ -277,6 +303,7 @@ error_handlers = {
     MailboxAlreadyExistsError: 409,
     MailboxNotFoundError: 404,
     MailboxValidationError: 400,
+    PasswordValidationError: 400,
 }
 
 for exc_type, status in error_handlers.items():

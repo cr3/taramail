@@ -221,3 +221,33 @@ def test_api_delete_dkim_key(api_app, unique):
     api_app.delete(f"/api/dkim/{domain}")
     response = api_app.get(f"/api/dkim/{domain}")
     assert response.status_code == 404
+
+
+def test_api_get_password_policy(api_app):
+    """Getting the password policy should return a dict with the policy."""
+    response = api_app.get("/api/password_policy")
+
+    assert_that(response.json(), has_entries(
+        length=8,
+        chars=True,
+        special_chars=True,
+        numbers=True,
+        lowerupper=True,
+    ))
+
+
+def test_api_put_password_policy(api_app):
+    """Updating the password policy should return a dict with the updated policy."""
+    api_app.get("/api/password_policy")
+    response = api_app.put("/api/password_policy", json={"length": 1})
+
+    assert_that(response.json(), has_entries(length=1))
+
+
+def test_api_delete_password_policy(api_app):
+    """Deleting the password policy should return a dict with the original policy."""
+    api_app.put("/api/password_policy", json={"length": 1})
+    api_app.delete("/api/password_policy")
+    response = api_app.get("/api/password_policy")
+
+    assert_that(response.json(), has_entries(length=8))

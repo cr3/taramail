@@ -36,8 +36,8 @@ from taramail.models import (
     UserAttributesModel,
 )
 from taramail.password import (
+    PasswordPolicyManager,
     hash_password,
-    validate_passwords,
 )
 from taramail.schemas import DomainStr
 from taramail.sogo import Sogo
@@ -163,6 +163,9 @@ class MailboxManager:
 
     db: DBSession
     store: Store = field(factory=RedisStore.from_env)
+    password_policy_manager: PasswordPolicyManager = field(
+        default=Factory(lambda self: PasswordPolicyManager(self.store), takes_self=True),
+    )
     sogo: Sogo = field(
         default=Factory(lambda self: Sogo(self.db), takes_self=True),
     )
@@ -245,8 +248,7 @@ class MailboxManager:
             quota_left = domain_data.quota - mailbox_data.quota
             raise MailboxValidationError(f"Not enough quota left ({quota_left})")
 
-        validate_passwords(mailbox_create.password, mailbox_create.password2)
-        hashed_password = hash_password(mailbox_create.password)
+        hashed_password = self._get_hashed_password(mailbox_create.password, mailbox_create.password2)
 
         mailbox = MailboxModel(
             username=username,
@@ -338,8 +340,10 @@ class MailboxManager:
             mailbox.active = mailbox_update.active
 
         if mailbox_update.password:
-            validate_passwords(mailbox_update.password, mailbox_update.password2)
-            mailbox.password = hash_password(mailbox_update.password)
+            mailbox.password = self._get_hashed_password(
+                mailbox_update.password,
+                mailbox_update.password2,
+            )
 
         if mailbox_update.quota is not None:
             domain_data = self._get_domain_data(details.domain)
@@ -399,6 +403,11 @@ class MailboxManager:
         self.store.hdel("RL_VALUE", username)
 
         # TODO: oauth
+
+    def _get_hashed_password(self, password1: str, password2: str) -> str:
+        password_policy = self.password_policy_manager.get_policy()
+        password_policy.validate_passwords(password1, password2)
+        return hash_password(password1)
 
     def _get_mailbox_data(self, domain: DomainStr):
         return self.db.execute(

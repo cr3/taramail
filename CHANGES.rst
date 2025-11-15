@@ -6,6 +6,7 @@ Released 2025-11-07
 -   Add alias support.
 -   Add DKIM support.
 -   Add dynamic Rspamd settings.
+-   Add password policy.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
 -   Move frontend to taram.
