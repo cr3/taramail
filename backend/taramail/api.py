@@ -306,14 +306,17 @@ error_handlers = {
     PasswordValidationError: 400,
 }
 
-for exc_type, status in error_handlers.items():
-    @app.exception_handler(exc_type)
-    async def error_handler(request: Request, exc: exc_type, exc_type=exc_type, status=status):
-        logger.warning(f"{exc_type.__name__} at {request.url}: {exc}")
+def create_error_handler(exc_class, status_code):
+    async def error_handler(request: Request, exc: Exception):
+        logger.warning(f"{exc_class.__name__} at {request.url}: {exc}")
         return JSONResponse(
-            status_code=status,
-            content={"error": exc_type.__name__, "detail": str(exc)},
+            status_code=status_code,
+            content={"error": exc_class.__name__, "detail": str(exc)},
         )
+    return error_handler
+
+for exc_type, status in error_handlers.items():
+    app.exception_handler(exc_type)(create_error_handler(exc_type, status))
 
 
 @app.exception_handler(Exception)
