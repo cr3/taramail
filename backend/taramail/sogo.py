@@ -17,7 +17,10 @@ from sqlalchemy.sql import (
     func,
 )
 
-from taramail.db import DBSession
+from taramail.db import (
+    DBSession,
+    DBUnsupportedDialectError,
+)
 from taramail.models import (
     MailboxModel,
     SogoAclModel,
@@ -140,7 +143,7 @@ class Sogo:
             }
             upsert_stmt = insert_stmt.on_duplicate_key_update(**update_dict)
         else:
-            raise Exception(f"Unsupported dialect: {dialect}")
+            raise DBUnsupportedDialectError(f"Unsupported dialect: {dialect}")
 
         self.db.execute(upsert_stmt)
 

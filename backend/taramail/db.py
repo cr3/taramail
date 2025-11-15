@@ -10,6 +10,10 @@ from sqlalchemy.orm import Session as DBSession
 from sqlalchemy.orm import sessionmaker
 
 
+class DBUnsupportedDialectError(Exception):
+    """Raised when an unsupported dialect is encountered."""
+
+
 def get_db_url(env=os.environ) -> URL:
     """Return a database URL from DB variables in the environment."""
     return URL.create(
