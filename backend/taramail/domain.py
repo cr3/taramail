@@ -1,3 +1,4 @@
+import logging
 from contextlib import suppress
 
 from attrs import (
@@ -44,6 +45,8 @@ from taramail.units import (
     gibi,
     kebi,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DomainError(Exception):
@@ -133,11 +136,15 @@ class DomainManager:
     ))
 
     def get_origin_domain(self, domain: DomainStr) -> str:
-        with suppress(NoResultFound):
+        try:
             domain = self.db.scalars(
                 select(AliasDomainModel.target_domain)
                 .where(AliasDomainModel.alias_domain == domain)
             ).one()
+        except NoResultFound:
+            logger.debug("No alias domain found for %(domain)s, using as-is", {
+                "domain": domain,
+            })
 
         return domain
 
