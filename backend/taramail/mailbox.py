@@ -346,14 +346,25 @@ class MailboxManager:
             )
 
         if mailbox_update.quota is not None:
+            # Ensure new quota is not less than current usage
+            if mailbox_update.quota < details.quota_used:
+                raise MailboxValidationError(
+                    f"Cannot reduce quota below current usage ({details.quota_used} bytes)"
+                )
+
             domain_data = self._get_domain_data(details.domain)
             if mailbox_update.quota > domain_data.maxquota:
-                raise MailboxValidationError(f"Mailbox quota ({mailbox_update.quota}) exceeds the domain limit ({domain_data.maxquota})")
+                raise MailboxValidationError(
+                    f"Mailbox quota ({mailbox_update.quota} bytes) exceeds the domain limit ({domain_data.maxquota} bytes)")
+                )
 
             mailbox_data = self._get_mailbox_data(details.domain)
-            if mailbox_data.quota - details.quota + mailbox_update.quota > domain_data.quota:
-                quota_left = domain_data.quota - mailbox_data.quota + details.quota
-                raise MailboxValidationError(f"Not enough quota left ({quota_left})")
+            # Calculate available quota after removing current mailbox
+            available_quota = domain_data.quota - (mailbox_data.quota - details.quota)
+            if mailbox_update.quota > available_quota:
+                raise MailboxValidationError(
+                    f"Not enough quota left ({available_quota} bytes)"
+                )
 
             mailbox.quota = mailbox_update.quota
 
