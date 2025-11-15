@@ -62,13 +62,8 @@ def resolve_addresses(addresses):
         try:
             answer = resolver.resolve(qname=hostname, rdtype=rdtype, lifetime=3)
         except dns.exception.Timeout:
-            logger.info(
-                "Hostname %(hostname)s timedout on resolve",
-                {
-                    "hostname": hostname,
-                },
-            )
-            break
+            logger.info("Hostname %(hostname)s timedout on resolve", {"hostname": hostname})
+            continue
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             continue
         except dns.exception.DNSException:
