@@ -2,6 +2,7 @@ import base64
 from typing import Annotated
 
 from attrs import define
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import (
@@ -64,21 +65,8 @@ class DKIMManager:
         if not pubkey:
             raise DKIMNotFoundError(f"DKIM key not found: {domain}")
 
+        length = self._detect_key_length(pubkey)
         dkim_selector = self.store.hget("DKIM_SELECTORS", domain) or "dkim"
-
-        # Determine key length based on public key size
-        if len(pubkey) < 391:
-            length = "1024"
-        elif len(pubkey) < 564:
-            length = "2048"
-        elif len(pubkey) < 736:
-            length = "3072"
-        elif len(pubkey) < 1416:
-            length = "4096"
-        else:
-            length = ">= 8192"
-
-        # Generate DKIM TXT record
         dkim_txt = f'v=DKIM1;k=rsa;t=s;s=email;p={pubkey}'
 
         # Include private key if requested
@@ -136,6 +124,27 @@ class DKIMManager:
         self.store.hdel("DKIM_SELECTORS", domain)
         if selector:
             self.store.hdel("DKIM_PRIV_KEYS", f"{selector}.{domain}")
+
+    def _detect_key_length(self, pubkey: str) -> str:
+        """Detect key length from base64-encoded public key size."""
+        try:
+            key = serialization.load_pem_public_key(
+                pubkey.encode(),
+                backend=default_backend()
+            )
+            return str(key.key_size)
+        except Exception:
+            # Fallback to length estimation
+            for threshold, size in [
+                (391, "1024"),
+                (564, "2048"),
+                (736, "3072"),
+                (1416, "4096"),
+            ]:
+                if len(pubkey) < threshold:
+                    return size
+
+            return ">= 8192"
 
     def _generate_dkim_keypair(self, key_size: int) -> dict:
         """Generate a DKIM key pair with the specified key size."""
