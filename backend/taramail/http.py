@@ -1,7 +1,11 @@
 """HTTP module."""
 
+import logging
+
 from requests import Session
 from yarl import URL
+
+logger = logging.getLogger(__name__)
 
 HTTP_METHODS = {
     "GET",
@@ -13,7 +17,6 @@ HTTP_METHODS = {
     "CONNECT",
     "PATCH",
 }
-
 
 class HTTPSession(Session):
     """An HTTP session with origin."""
@@ -40,6 +43,13 @@ class HTTPSession(Session):
         url = self.origin.with_path(path)
         kwargs.setdefault("timeout", self.timeout)
         response = super().request(method, url, **kwargs)
-        response.raise_for_status()
-
-        return response
+        try:
+            response.raise_for_status()
+        except Exception:
+            logger.exception("HTTP request failed: %(method)s %(url)s", {
+                "method": method,
+                "url": url,
+            })
+            raise
+        else:
+            return response
