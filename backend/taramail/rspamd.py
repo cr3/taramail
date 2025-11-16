@@ -84,7 +84,7 @@ class RspamdSettings:
             select(SogoFolderInfoModel.c_path2, SogoQuickContactModel.c_mail)
             .select_from(SogoFolderInfoModel)
             .join(SogoQuickContactModel, SogoQuickContactModel.c_folder_id == SogoFolderInfoModel.c_folder_id)
-            .group_by(SogoFolderInfoModel.c_path2)
+            .distinct()
         ).all()
         for user, contacts in rows:
             user = user or ""
