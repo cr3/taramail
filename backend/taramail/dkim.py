@@ -108,11 +108,19 @@ class DKIMManager:
         # Get source domain DKIM details
         from_domain_dkim = self.get_details(dkim_duplicate.from_domain, privkey=True)
 
+        try:
+            privkey_bytes = base64.b64decode(from_domain_dkim.privkey)
+        except (base64.binascii.Error, ValueError) as e:
+            raise DKIMError(f"Invalid DKIM private key format: {e}") from e
+
         # Copy DKIM data
         self.store.hset("DKIM_PUB_KEYS", dkim_duplicate.to_domain, from_domain_dkim.pubkey)
         self.store.hset("DKIM_SELECTORS", dkim_duplicate.to_domain, from_domain_dkim.dkim_selector)
-        self.store.hset("DKIM_PRIV_KEYS", f"{from_domain_dkim.dkim_selector}.{dkim_duplicate.to_domain}",
-                        base64.b64decode(from_domain_dkim.privkey))
+        self.store.hset(
+            "DKIM_PRIV_KEYS",
+            f"{from_domain_dkim.dkim_selector}.{dkim_duplicate.to_domain}",
+            privkey_bytes.decode(),
+        )
 
     def delete_key(self, domain: DomainStr) -> None:
         """Delete DKIM keys for a domain."""
