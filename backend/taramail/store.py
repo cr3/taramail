@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from functools import wraps
 from time import time
+from typing import Any
 
 from attrs import define, field
 from pylibmc import Client
@@ -40,11 +41,11 @@ class Store(ABC):
         """Removes the specified keys."""
 
     @abstractmethod
-    def hget(self, key: str, field: str) -> str:
+    def hget(self, key: str, field: str) -> str | None:
         """Returns the value associated with field in the hash stored at key."""
 
     @abstractmethod
-    def hgetall(self, key: str) -> str:
+    def hgetall(self, key: str) -> dict[str, Any]:
         """Returns all fields and values of the hash stored at key."""
 
     @abstractmethod
@@ -52,15 +53,15 @@ class Store(ABC):
         """Sets the specified field to a value in the hash stored at key."""
 
     @abstractmethod
-    def hdel(self, key: str, *fields):
+    def hdel(self, key: str, *fields) -> int:
         """Removes the specified fields from the hash stored at key."""
 
     @abstractmethod
-    def hkeys(self, key: str) -> list:
+    def hkeys(self, key: str) -> list[str]:
         """Returns all field names in the hash stored at key."""
 
     @abstractmethod
-    def flushall(self):
+    def flushall(self) -> None:
         """Delete all the keys of all the existing databases, not just the currently selected one."""
 
 
@@ -120,7 +121,7 @@ class MemcachedStore(Store):
         """See `Store.delete`."""
         return sum(self.client.delete(key) for key in keys)
 
-    def hget(self, key: str, field: str) -> str:
+    def hget(self, key: str, field: str) -> str | None:
         """See `Store.hget`."""
         payload = self.client.get(key, "{}")
         try:
@@ -130,7 +131,7 @@ class MemcachedStore(Store):
 
         return data.get(field)
 
-    def hgetall(self, key: str) -> str:
+    def hgetall(self, key: str) -> dict[str, Any]:
         """See `Store.hgetall`."""
         payload = self.client.get(key, "{}")
         with suppress(ValueError):
@@ -151,7 +152,7 @@ class MemcachedStore(Store):
         self.set(key, json.dumps(data), ttl)
         return count
 
-    def hdel(self, key, *fields):
+    def hdel(self, key, *fields) -> int:
         """See `Store.hdel`."""
         count = 0
         data = self.hgetall(key)
@@ -165,12 +166,12 @@ class MemcachedStore(Store):
 
         return count
 
-    def hkeys(self, key: str) -> list:
+    def hkeys(self, key: str) -> list[str]:
         """See `Store.hkeys`."""
         data = self.hgetall(key)
-        return list(data.keys()) if data else []
+        return list(data.keys())
 
-    def flushall(self):
+    def flushall(self) -> None:
         """See `Store.flushall`."""
         self.client.flush_all()
 
@@ -237,7 +238,7 @@ class MemoryStore(Store):
 
         return count
 
-    def hget(self, key: str, field: str) -> str:
+    def hget(self, key: str, field: str) -> str | None:
         """See `Store.hget`."""
         try:
             record = self.records[key]
@@ -253,7 +254,7 @@ class MemoryStore(Store):
 
         return record.data.get(field)
 
-    def hgetall(self, key: str) -> str:
+    def hgetall(self, key: str) -> dict[str, Any]:
         """See `Store.hgetall`."""
         try:
             record = self.records[key]
@@ -262,7 +263,7 @@ class MemoryStore(Store):
 
         if record.expired:
             self.delete(key)
-            return None
+            return {}
 
         if not record.is_dict:
             raise TypeError("Wrong type")
@@ -276,7 +277,7 @@ class MemoryStore(Store):
         record.data[field] = str(value)
         return count
 
-    def hdel(self, key, *fields):
+    def hdel(self, key, *fields) -> int:
         """See `Store.hdel`."""
         count = 0
         data = self.hgetall(key)
@@ -287,12 +288,12 @@ class MemoryStore(Store):
 
         return count
 
-    def hkeys(self, key: str) -> list:
+    def hkeys(self, key: str) -> list[str]:
         """See `Store.hkeys`."""
         data = self.hgetall(key)
-        return list(data.keys()) if data else []
+        return list(data.keys())
 
-    def flushall(self):
+    def flushall(self) -> None:
         """See `Store.flushall`."""
         self.records.clear()
 
