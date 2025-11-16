@@ -351,7 +351,7 @@ services:
       - ${IPV4_NETWORK:-172.22.1}.254
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.7-alpine
     volumes:
       - ./redis/docker-entrypoint.sh:/docker-entrypoint.sh:Z
       - redis-vol-1:/data/
