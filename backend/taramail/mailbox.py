@@ -355,7 +355,7 @@ class MailboxManager:
             domain_data = self._get_domain_data(details.domain)
             if mailbox_update.quota > domain_data.maxquota:
                 raise MailboxValidationError(
-                    f"Mailbox quota ({mailbox_update.quota} bytes) exceeds the domain limit ({domain_data.maxquota} bytes)")
+                    f"Mailbox quota ({mailbox_update.quota} bytes) exceeds the domain limit ({domain_data.maxquota} bytes)"
                 )
 
             mailbox_data = self._get_mailbox_data(details.domain)
