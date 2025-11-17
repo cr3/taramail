@@ -5,16 +5,22 @@ from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass
 
-from attrs import define
-from pydantic import (
-    EmailStr,
+from attrs import (
+    define,
+    field,
 )
-from sqlalchemy import or_, select
+from pydantic import EmailStr
+from sqlalchemy import (
+    or_,
+    select,
+)
 
 from taramail.db import DBSession
+from taramail.domain import DomainNotFoundError
 from taramail.email import (
     InvalidEmail,
     is_email,
+    join_email,
     split_email,
 )
 from taramail.models import (
@@ -27,6 +33,7 @@ from taramail.models import (
     SogoQuickContactModel,
 )
 from taramail.schemas import DomainStr
+from taramail.store import Store
 
 
 def escape_slash(s):
@@ -132,7 +139,7 @@ class RspamdSettings:
     def get_email_rcpts(self, email: EmailStr) -> list[str]:
         rcpts: list[str] = []
 
-        # Standard aliases (address -> goto = email; exclude domain catchall '@%')
+        # Standard aliases (address -> goto = email; exclude domain catchall "@%")
         std_aliases = self.db.scalars(
             select(AliasModel.address)
             .where(AliasModel.goto == email, ~AliasModel.address.like("@%"))
@@ -228,3 +235,103 @@ class RspamdSettings:
             ))
 
         return blocks
+
+
+@define(frozen=True)
+class RspamdAliasexp:
+    """Alias expansion for Rspamd."""
+
+    db: DBSession
+    store: Store
+    max_loops: int = field(default=20)
+
+    def expand_alias(self, rcpt: EmailStr) -> str | None:
+        """Expand an alias to its final mailbox recipient."""
+        final_mailboxes: set[str] = set()
+
+        rcpt = re.sub(r"^(.*?)\+.*(@.*)$", r"\1\2", rcpt)
+
+        if gotos := self._get_gotos(rcpt):
+            loop_count = 0
+            while gotos and loop_count <= self.max_loops:
+                loop_count += 1
+                new_gotos: list[str] = []
+
+                for goto in gotos:
+                    if username := self._get_mailbox(goto):
+                        final_mailboxes.add(username)
+                    elif goto_branches := self._expand_goto(goto):
+                        new_gotos.extend(goto_branches)
+
+                gotos = list(set(new_gotos))
+
+        if len(final_mailboxes) == 1:
+            return final_mailboxes.pop()
+
+        return None
+
+    def _get_gotos(self, rcpt: str) -> list[str]:
+        """Get initial goto addresses for the recipient."""
+        local_part, domain = split_email(rcpt)
+        if not self.store.hget("DOMAIN_MAP", domain):
+            raise DomainNotFoundError(f"Domain not managed: {domain}")
+
+        if alias := self.db.scalars(
+            select(AliasModel.goto)
+            .where(AliasModel.address == rcpt, AliasModel.active == 1)
+        ).first():
+            return alias.split(",")
+
+        if catchall := self.db.scalars(
+            select(AliasModel.goto)
+            .where(AliasModel.address == f"@{domain}", AliasModel.active == 1)
+        ).first():
+            return catchall.split(",")
+
+        if target_domain := self.db.scalars(
+            select(AliasDomainModel.target_domain)
+            .where(AliasDomainModel.alias_domain == domain, AliasDomainModel.active == 1)
+        ).first():
+            return [join_email(local_part, target_domain)]
+
+        return []
+
+    def _get_mailbox(self, email: str) -> str | None:
+        """Check if email is an active mailbox."""
+        return self.db.scalars(
+            select(MailboxModel.username)
+            .where(
+                MailboxModel.username == email,
+                MailboxModel.active == 1,
+            )
+        ).first()
+
+    def _expand_goto(self, goto: str) -> list[str]:
+        """Expand a goto address to its branches."""
+        try:
+            local_part, domain = split_email(goto)
+        except InvalidEmail:
+            return []
+
+        if not self.store.hget("DOMAIN_MAP", domain):
+            return []
+
+        if alias := self.db.scalars(
+            select(AliasModel.goto)
+            .where(
+                AliasModel.address == goto,
+                AliasModel.active == 1,
+            )
+        ).first():
+            return alias.split(",")
+
+        if target_domain := self.db.scalars(
+            select(AliasDomainModel.target_domain)
+            .where(
+                AliasDomainModel.alias_domain == domain,
+                AliasDomainModel.active == 1,
+            )
+        ).first():
+            return [join_email(local_part, target_domain)]
+
+        return []

@@ -208,6 +208,131 @@ rspamd_config:register_symbol({
 })
 
 rspamd_config:register_symbol({
+  name = 'TAG_MAIL',
+  type = 'postfilter',
+  callback = function(task)
+    local util = require("rspamd_util")
+    local rspamd_logger = require "rspamd_logger"
+    local redis_params = rspamd_parse_redis_server('taghandler')
+    local rspamd_http = require "rspamd_http"
+    local rcpts = task:get_recipients('smtp')
+    local lua_util = require "lua_util"
+
+    local tagged_rcpt = task:get_symbol("TAGGED_RCPT")
+    local mail_domain = task:get_symbol("RCPT_MAIL_DOMAIN")
+
+    local function remove_mail_tag()
+      local mail_tag_header = task:get_header('X-Mail-Tag', false)
+      if mail_tag_header then
+        task:set_milter_reply({
+          remove_headers = {['X-Mail-Tag'] = 0},
+        })
+      end
+      return true
+    end
+
+    if tagged_rcpt and tagged_rcpt[1].options and mail_domain then
+      local tag = tagged_rcpt[1].options[1]
+      rspamd_logger.infox("found tag: %s", tag)
+      local action = task:get_metric_action('default')
+      rspamd_logger.infox("metric action now: %s", action)
+
+      if action ~= 'no action' and action ~= 'greylist' then
+        rspamd_logger.infox("skipping tag handler for action: %s", action)
+        remove_mail_tag()
+        return true
+      end
+
+      local function http_callback(err_message, code, body, headers)
+        if body ~= nil and body ~= "" then
+          rspamd_logger.infox(rspamd_config, "expanding rcpt to \"%s\"", body)
+
+          local function tag_callback_subject(err, data)
+            if err or type(data) ~= 'string' then
+              rspamd_logger.infox(rspamd_config, "subject tag handler rcpt %s returned invalid or empty data (\"%s\") or error (\"%s\") - trying subfolder tag handler...", body, data, err)
+
+              local function tag_callback_subfolder(err, data)
+                if err or type(data) ~= 'string' then
+                  rspamd_logger.infox(rspamd_config, "subfolder tag handler for rcpt %s returned invalid or empty data (\"%s\") or error (\"%s\")", body, data, err)
+                  remove_mail_tag()
+                else
+                  rspamd_logger.infox("Add X-Mail-Tag header")
+                  task:set_milter_reply({
+                    add_headers = {['X-Mail-Tag'] = 'YES'}
+                  })
+                end
+              end
+
+              local redis_ret_subfolder = rspamd_redis_make_request(task,
+                redis_params, -- connect params
+                body, -- hash key
+                false, -- is write
+                tag_callback_subfolder, --callback
+                'HGET', -- command
+                {'RCPT_WANTS_SUBFOLDER_TAG', body} -- arguments
+              )
+              if not redis_ret_subfolder then
+                rspamd_logger.infox(rspamd_config, "cannot make request to load tag handler for rcpt")
+                remove_mail_tag()
+              end
+
+            else
+              rspamd_logger.infox("user wants subject modified for tagged mail")
+              local sbj = task:get_header('Subject')
+              new_sbj = '=?UTF-8?B?' .. tostring(util.encode_base64('[' .. tag .. '] ' .. sbj)) .. '?='
+              task:set_milter_reply({
+                remove_headers = {
+                  ['Subject'] = 1,
+                  ['X-Mail-Tag'] = 0
+                },
+                add_headers = {['Subject'] = new_sbj}
+              })
+            end
+          end
+
+          local redis_ret_subject = rspamd_redis_make_request(task,
+            redis_params, -- connect params
+            body, -- hash key
+            false, -- is write
+            tag_callback_subject, --callback
+            'HGET', -- command
+            {'RCPT_WANTS_SUBJECT_TAG', body} -- arguments
+          )
+          if not redis_ret_subject then
+            rspamd_logger.infox(rspamd_config, "cannot make request to load tag handler for rcpt")
+            remove_mail_tag()
+          end
+
+        end
+      end
+
+      if rcpts and #rcpts == 1 then
+        for _,rcpt in ipairs(rcpts) do
+          local rcpt_split = rspamd_str_split(rcpt['addr'], '@')
+          if #rcpt_split == 2 then
+            if rcpt_split[1] == 'postmaster' then
+              rspamd_logger.infox(rspamd_config, "not expanding postmaster alias")
+              remove_mail_tag()
+            else
+              rspamd_http.request({
+                task=task,
+                url='http://api/rspamd/aliasexp',
+                body='',
+                callback=http_callback,
+                headers={Rcpt=rcpt['addr']},
+              })
+            end
+          end
+        end
+      end
+    else
+      remove_mail_tag()
+    end
+  end,
+  priority = 19
+})
+
+rspamd_config:register_symbol({
   name = 'DYN_RL_CHECK',
   type = 'prefilter',
   callback = function(task)

@@ -11,6 +11,9 @@ from hamcrest import (
     has_properties,
 )
 
+from taramail.alias import AliasCreate
+from taramail.domain import DomainCreate
+from taramail.mailbox import MailboxCreate
 from taramail.models import (
     AliasDomainModel,
     AliasModel,
@@ -20,10 +23,13 @@ from taramail.models import (
     SogoFolderInfoModel,
     SogoQuickContactModel,
 )
-from taramail.rspamd import RspamdSettings
+from taramail.rspamd import (
+    RspamdAliasexp,
+    RspamdSettings,
+)
 
 
-def test_rspamd_get_allowed_domains_regex(db_model, db_session, unique):
+def test_rspamd_settings_get_allowed_domains_regex(db_model, db_session, unique):
     """The allowed domains regex should be the union of domains and alias domains."""
     domain = db_model(DomainModel)
     alias_domain = db_model(AliasDomainModel)
@@ -35,7 +41,7 @@ def test_rspamd_get_allowed_domains_regex(db_model, db_session, unique):
     ))
 
 
-def test_rspamd_get_internal_aliases(db_model, db_session):
+def test_rspamd_settings_get_internal_aliases(db_model, db_session):
     """Getting internal aliases should only return active aliases."""
     alias = db_model(AliasModel, active=1, internal=1)
     db_model(AliasModel, active=0, internal=1)
@@ -44,7 +50,7 @@ def test_rspamd_get_internal_aliases(db_model, db_session):
     assert_that(result, contains_exactly(alias.address))
 
 
-def test_rspamd_get_sogo_wl(db_model, db_session, unique):
+def test_rspamd_settings_get_sogo_wl(db_model, db_session, unique):
     """Getting the SOGo whitelist should lookup contacts."""
     user, contact = unique("text"), unique("email")
     folder_info = db_model(SogoFolderInfoModel, c_path2=user)
@@ -53,7 +59,7 @@ def test_rspamd_get_sogo_wl(db_model, db_session, unique):
     assert result == {user: [contact]}
 
 
-def test_rspamd_get_custom_scores(db_model, db_session, unique):
+def test_rspamd_settings_get_custom_scores(db_model, db_session, unique):
     """Getting custom scores should look at filterconf for high and low spam levels."""
     obj = unique("domain")
     db_model(FilterconfModel, object=obj, option="lowspamlevel", value=1)
@@ -69,7 +75,7 @@ def test_rspamd_get_custom_scores(db_model, db_session, unique):
     ))
 
 
-def test_rspamd_get_email_rcpts_alias_domains(db_model, db_session, unique):
+def test_rspamd_settings_get_email_rcpts_alias_domains(db_model, db_session, unique):
     """Getting email recipients for alias domains should match alias domain and alias email."""
     local_part, alias_domain, target_domain = unique("text"), unique("domain"), unique("domain")
     alias_email = f"{local_part}@{alias_domain}"
@@ -83,7 +89,7 @@ def test_rspamd_get_email_rcpts_alias_domains(db_model, db_session, unique):
     ))
 
 
-def test_rspamd_get_email_rcpts_standard_aliases(db_model, db_session, unique):
+def test_rspamd_settings_get_email_rcpts_standard_aliases(db_model, db_session, unique):
     """Getting email recipients for standard aliases should match address and local_part."""
     goto, local_part, domain = unique("email"), unique("text"), unique("domain")
     address = f"{local_part}@{domain}"
@@ -95,7 +101,7 @@ def test_rspamd_get_email_rcpts_standard_aliases(db_model, db_session, unique):
     ))
 
 
-def test_rspamd_get_domain_rcpts_alias_domains(db_model, db_session):
+def test_rspamd_settings_get_domain_rcpts_alias_domains(db_model, db_session):
     """Getting domain recipients for alias domains should match alias domain and target domain."""
     alias_domain = db_model(AliasDomainModel)
     result = RspamdSettings(db_session).get_domain_rcpts(alias_domain.target_domain)
@@ -105,7 +111,7 @@ def test_rspamd_get_domain_rcpts_alias_domains(db_model, db_session):
     ))
 
 
-def test_rspamd_get_domain_rcpts_standard_aliases(db_model, db_session, unique):
+def test_rspamd_settings_get_domain_rcpts_standard_aliases(db_model, db_session, unique):
     """Getting domain recipients for standard aliases should match local_part, domain and address."""
     local_part, domain = unique("text"), unique("domain")
     address = f"{local_part}@{domain}"
@@ -116,3 +122,31 @@ def test_rspamd_get_domain_rcpts_standard_aliases(db_model, db_session, unique):
         contains_string(domain),
         address,
     ))
+
+
+def test_rspamd_aliasexp_exand_alias(alias_manager, domain_manager, mailbox_manager, db_session, redis_store, unique):
+    """TODO"""
+    domain = unique("domain")
+    domain_create = DomainCreate(domain=domain)
+    domain_manager.create_domain(domain_create)
+
+    local_part, password = unique("text"), unique("password")
+    mailbox = f"{local_part}@{domain}"
+    mailbox_create = MailboxCreate(
+        local_part=local_part,
+        domain=domain,
+        password=password,
+        password2=password,
+    )
+    mailbox_manager.create_mailbox(mailbox_create)
+
+    alias = unique("email", domain=domain)
+    alias_create = AliasCreate(
+        address=alias,
+        goto=mailbox,
+    )
+    result = alias_manager.create_alias(alias_create)
+    alias_manager.db.flush()
+
+    result = RspamdAliasexp(db_session, redis_store).expand_alias(alias)
+    assert result == mailbox

@@ -73,7 +73,10 @@ from taramail.password import (
     PasswordPolicyUpdate,
     PasswordValidationError,
 )
-from taramail.rspamd import RspamdSettings
+from taramail.rspamd import (
+    RspamdAliasexp,
+    RspamdSettings,
+)
 from taramail.schemas import (
     AliasStr,
     DomainStr,
@@ -123,6 +126,11 @@ def get_rspamd_settings(db: DbDep):
     return RspamdSettings(db)
 
 RspamdSettingsDep = Annotated[RspamdSettings, Depends(get_rspamd_settings)]
+
+def get_rspamd_aliasexp(db: DbDep, store: StoreDep):
+    return RspamdAliasexp(db, store)
+
+RspamdAliasexpDep = Annotated[RspamdAliasexp, Depends(get_rspamd_aliasexp)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
@@ -276,6 +284,18 @@ def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Respon
         "whitelist_blocks": settings.get_blocks("whitelist_from", "whitelist_from_mime"),
         "blacklist_blocks": settings.get_blocks("blacklist_from", "blacklist_from_mime"),
     })
+
+
+@app.get("/rspamd/aliasexp")
+def get_rspamd_aliasexp(request: Request, aliasexp: RspamdAliasexpDep) -> Response:
+    """Expand email alias to final mailbox recipient."""
+    if (
+        (rcpt := request.headers.get("Rcpt"))
+        and (content := aliasexp.expand_alias(rcpt))
+    ):
+        return Response(content=content, media_type="text/plain")
+
+    return Response(content="", media_type="text/plain")
 
 
 @app.get("/rspamd/error")

@@ -14,7 +14,7 @@ if header :contains "X-Spam-Flag" "YES" {
 
 if allof (
   envelope :detail :matches "to" "*",
-  header :contains "X-Moo-Tag" "YES"
+  header :contains "X-Mail-Tag" "YES"
   ) {
   set :lower :upperfirst "tag" "${1}";
   if mailboxexists "INBOX/${1}" {

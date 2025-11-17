@@ -3,6 +3,7 @@
 from hamcrest import (
     assert_that,
     contains_string,
+    equal_to,
     has_entries,
     starts_with,
 )
@@ -100,6 +101,33 @@ def test_api_password_policy(api_session, unique):
 
 
 def test_rspamd_settings(api_session):
-    """The API should expose rspamd settings."""
+    """The API should expose settings for Rspamd."""
     response = api_session.get("/rspamd/settings")
     assert_that(response.text, contains_string("monit"))
+
+
+def test_rspamd_aliasexp(api_session, unique):
+    """The API should expand aliases for Rspamd."""
+    domain = unique("domain")
+    api_session.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+
+    local_part, password = unique("text"), unique("password")
+    mailbox = f"{local_part}@{domain}"
+    api_session.post("/api/mailboxes", json={
+        "local_part": local_part,
+        "domain": domain,
+        "password": password,
+        "password2": password,
+    })
+
+    alias = unique("email", domain=domain)
+    api_session.post("/api/aliases", json={
+        "address": alias,
+        "goto": mailbox,
+    })
+
+    response = api_session.get("/rspamd/aliasexp", headers={"Rcpt": alias})
+    assert_that(response.text, equal_to(mailbox))
