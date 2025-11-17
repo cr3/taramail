@@ -82,8 +82,8 @@ class AliasDetails(BaseModel):
     internal: bool
     active: bool
     sogo_visible: bool
-    private_comment: str | None
-    public_comment: str | None
+    private_comment: str
+    public_comment: str
     in_primary_domain: DomainStr | None
 
 
