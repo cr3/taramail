@@ -1,5 +1,7 @@
 """Email convenience functions."""
 
+import re
+
 from pydantic import (
     EmailStr,
     TypeAdapter,
@@ -28,3 +30,8 @@ def split_email(email: str) -> tuple[str, str]:
 
 def join_email(local_part: str, domain: str) -> str:
     return f"{local_part}@{domain}"
+
+
+def strip_email_tags(email: str) -> str:
+    """Strip tags (plus addressing) from email address."""
+    return re.sub(r"^(.*?)\+.*(@.*)$", r"\1\2", email)

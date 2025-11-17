@@ -7,6 +7,7 @@ from taramail.email import (
     is_email,
     join_email,
     split_email,
+    strip_email_tags,
 )
 
 
@@ -23,6 +24,12 @@ def test_is_email(email, expected):
     assert is_email(email) is expected
 
 
+def test_join_email():
+    """Joining an email should concatenate the local_part and domain."""
+    email = join_email("a", "b.com")
+    assert email == "a@b.com"
+
+
 def test_split_email():
     """Splitting an email should return the local_part and domain."""
     local_part, domain = split_email("a@b.com")
@@ -34,7 +41,11 @@ def test_split_email_error():
     with pytest.raises(InvalidEmail):
         split_email("a")
 
-def test_join_email():
-    """Joining an email should concatenate the local_part and domain."""
-    email = join_email("a", "b.com")
-    assert email == "a@b.com"
+
+@pytest.mark.parametrize("email, expected", [
+    ("a@example.com", "a@example.com"),
+    ("a+tag@example.com", "a@example.com"),
+])
+def test_strip_email_tags(email, expected):
+    """Stripping email tags should return an email without tags."""
+    assert strip_email_tags(email) == expected

@@ -12,9 +12,7 @@ from fastapi import (
     Request,
     Response,
 )
-from fastapi.responses import (
-    JSONResponse,
-)
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -75,6 +73,7 @@ from taramail.password import (
 )
 from taramail.rspamd import (
     RspamdAliasexp,
+    RspamdBcc,
     RspamdSettings,
 )
 from taramail.schemas import (
@@ -131,6 +130,11 @@ def get_rspamd_aliasexp(db: DbDep, store: StoreDep):
     return RspamdAliasexp(db, store)
 
 RspamdAliasexpDep = Annotated[RspamdAliasexp, Depends(get_rspamd_aliasexp)]
+
+def get_rspamd_bcc(db: DbDep):
+    return RspamdBcc(db)
+
+RspamdBccDep = Annotated[RspamdBcc, Depends(get_rspamd_bcc)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
@@ -289,13 +293,18 @@ def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Respon
 @app.get("/rspamd/aliasexp")
 def get_rspamd_aliasexp(request: Request, aliasexp: RspamdAliasexpDep) -> Response:
     """Expand email alias to final mailbox recipient."""
-    if (
-        (rcpt := request.headers.get("Rcpt"))
-        and (content := aliasexp.expand_alias(rcpt))
-    ):
-        return Response(content=content, media_type="text/plain")
+    rcpt = request.headers.get("Rcpt")
+    content = aliasexp.expand_alias(rcpt)
+    return Response(content=content, media_type="text/plain")
 
-    return Response(content="", media_type="text/plain")
+
+@app.get("/rspamd/bcc")
+def get_rspamd_bcc(request: Request, bcc: RspamdBccDep) -> Response:
+    """Get BCC destination for recipient or sender."""
+    rcpt = request.headers.get("Rcpt")
+    sender = request.headers.get("From")
+    content = bcc.get_bcc_dest(rcpt, sender)
+    return Response(content=content, media_type="text/plain")
 
 
 @app.get("/rspamd/error")

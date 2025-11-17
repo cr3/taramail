@@ -9,7 +9,10 @@ from attrs import (
     define,
     field,
 )
-from pydantic import EmailStr
+from pydantic import (
+    EmailStr,
+    validate_call,
+)
 from sqlalchemy import (
     or_,
     select,
@@ -22,10 +25,12 @@ from taramail.email import (
     is_email,
     join_email,
     split_email,
+    strip_email_tags,
 )
 from taramail.models import (
     AliasDomainModel,
     AliasModel,
+    BccMapsModel,
     DomainModel,
     FilterconfModel,
     MailboxModel,
@@ -245,13 +250,13 @@ class RspamdAliasexp:
     store: Store
     max_loops: int = field(default=20)
 
-    def expand_alias(self, rcpt: EmailStr) -> str | None:
+    @validate_call
+    def expand_alias(self, rcpt: EmailStr) -> str:
         """Expand an alias to its final mailbox recipient."""
         final_mailboxes: set[str] = set()
 
-        rcpt = re.sub(r"^(.*?)\+.*(@.*)$", r"\1\2", rcpt)
-
-        if gotos := self._get_gotos(rcpt):
+        email = strip_email_tags(rcpt)
+        if gotos := self._get_gotos(email):
             loop_count = 0
             while gotos and loop_count <= self.max_loops:
                 loop_count += 1
@@ -268,17 +273,17 @@ class RspamdAliasexp:
         if len(final_mailboxes) == 1:
             return final_mailboxes.pop()
 
-        return None
+        return ""
 
-    def _get_gotos(self, rcpt: str) -> list[str]:
+    def _get_gotos(self, email: EmailStr) -> list[str]:
         """Get initial goto addresses for the recipient."""
-        local_part, domain = split_email(rcpt)
+        local_part, domain = split_email(email)
         if not self.store.hget("DOMAIN_MAP", domain):
             raise DomainNotFoundError(f"Domain not managed: {domain}")
 
         if alias := self.db.scalars(
             select(AliasModel.goto)
-            .where(AliasModel.address == rcpt, AliasModel.active == 1)
+            .where(AliasModel.address == email, AliasModel.active == 1)
         ).first():
             return alias.split(",")
 
@@ -296,7 +301,7 @@ class RspamdAliasexp:
 
         return []
 
-    def _get_mailbox(self, email: str) -> str | None:
+    def _get_mailbox(self, email: EmailStr) -> str | None:
         """Check if email is an active mailbox."""
         return self.db.scalars(
             select(MailboxModel.username)
@@ -335,3 +340,33 @@ class RspamdAliasexp:
             return [join_email(local_part, target_domain)]
 
         return []
+
+
+@define(frozen=True)
+class RspamdBcc:
+    """BCC maps handler for Rspamd."""
+
+    db: DBSession
+
+    @validate_call
+    def get_bcc_dest(self, rcpt: EmailStr | None = None, sender: EmailStr | None = None) -> str:
+        """Get BCC destination for given recipient or sender."""
+        for local_dest, bcc_type in [
+            (rcpt, "rcpt"),
+            (sender, "sender"),
+        ]:
+            if local_dest:
+                local_dest = strip_email_tags(local_dest)
+                bcc_dest = self.db.scalars(
+                    select(BccMapsModel.bcc_dest)
+                    .where(
+                        BccMapsModel.type == bcc_type,
+                        BccMapsModel.local_dest == local_dest,
+                        BccMapsModel.active == 1,
+                    )
+                ).first()
+
+                if bcc_dest and is_email(bcc_dest):
+                    return bcc_dest
+
+        return ""

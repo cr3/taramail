@@ -2,6 +2,7 @@
 
 import re
 
+import pytest
 from hamcrest import (
     all_of,
     assert_that,
@@ -17,6 +18,7 @@ from taramail.mailbox import MailboxCreate
 from taramail.models import (
     AliasDomainModel,
     AliasModel,
+    BccMapsModel,
     DomainModel,
     FilterconfModel,
     MailboxModel,
@@ -25,8 +27,49 @@ from taramail.models import (
 )
 from taramail.rspamd import (
     RspamdAliasexp,
+    RspamdBcc,
     RspamdSettings,
 )
+
+
+def test_rspamd_aliasexp_exand_alias(alias_manager, domain_manager, mailbox_manager, db_session, redis_store, unique):
+    """Expanding an alias should return the mailbox for an alias."""
+    domain = unique("domain")
+    domain_create = DomainCreate(domain=domain)
+    domain_manager.create_domain(domain_create)
+
+    local_part, password = unique("text"), unique("password")
+    mailbox = f"{local_part}@{domain}"
+    mailbox_create = MailboxCreate(
+        local_part=local_part,
+        domain=domain,
+        password=password,
+        password2=password,
+    )
+    mailbox_manager.create_mailbox(mailbox_create)
+
+    alias = unique("email", domain=domain)
+    alias_create = AliasCreate(
+        address=alias,
+        goto=mailbox,
+    )
+    result = alias_manager.create_alias(alias_create)
+    alias_manager.db.flush()
+
+    result = RspamdAliasexp(db_session, redis_store).expand_alias(alias)
+    assert result == mailbox
+
+
+@pytest.mark.parametrize("bcc_type", [
+    "rcpt",
+    "sender",
+])
+def test_rspamd_settings_get_bcc_dest_rcpt(bcc_type, db_model, db_session, unique):
+    """Getting the BCC dest should return the bcc dest for a local dest."""
+    bcc_dest, local_dest = unique("email"), unique("email")
+    db_model(BccMapsModel, type=bcc_type, bcc_dest=bcc_dest, local_dest=local_dest)
+    result = RspamdBcc(db_session).get_bcc_dest(**{bcc_type: local_dest})
+    assert result == bcc_dest
 
 
 def test_rspamd_settings_get_allowed_domains_regex(db_model, db_session, unique):
@@ -122,31 +165,3 @@ def test_rspamd_settings_get_domain_rcpts_standard_aliases(db_model, db_session,
         contains_string(domain),
         address,
     ))
-
-
-def test_rspamd_aliasexp_exand_alias(alias_manager, domain_manager, mailbox_manager, db_session, redis_store, unique):
-    """TODO"""
-    domain = unique("domain")
-    domain_create = DomainCreate(domain=domain)
-    domain_manager.create_domain(domain_create)
-
-    local_part, password = unique("text"), unique("password")
-    mailbox = f"{local_part}@{domain}"
-    mailbox_create = MailboxCreate(
-        local_part=local_part,
-        domain=domain,
-        password=password,
-        password2=password,
-    )
-    mailbox_manager.create_mailbox(mailbox_create)
-
-    alias = unique("email", domain=domain)
-    alias_create = AliasCreate(
-        address=alias,
-        goto=mailbox,
-    )
-    result = alias_manager.create_alias(alias_create)
-    alias_manager.db.flush()
-
-    result = RspamdAliasexp(db_session, redis_store).expand_alias(alias)
-    assert result == mailbox
