@@ -41,10 +41,7 @@ from taramail.password import (
 )
 from taramail.schemas import DomainStr
 from taramail.sogo import Sogo
-from taramail.store import (
-    RedisStore,
-    Store,
-)
+from taramail.store import Store
 
 
 class MailboxError(Exception):
@@ -162,7 +159,7 @@ class MailboxUpdate(BaseModel):
 class MailboxManager:
 
     db: DBSession
-    store: Store = field(factory=RedisStore.from_env)
+    store: Store
     password_policy_manager: PasswordPolicyManager = field(
         default=Factory(lambda self: PasswordPolicyManager(self.store), takes_self=True),
     )
@@ -179,7 +176,7 @@ class MailboxManager:
                 .join(UserAttributesModel, UserAttributesModel.username == MailboxModel.username)
             ).one()
         except NoResultFound as e:
-            raise MailboxNotFoundError(f"Mailbox for {username} is invalid") from e
+            raise MailboxNotFoundError(f"Mailbox for {username} not found") from e
 
         logs = self.db.execute(
             select(func.max(SaslLogModel.datetime), SaslLogModel.service)

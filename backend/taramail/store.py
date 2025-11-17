@@ -49,7 +49,7 @@ class Store(ABC):
         """Returns all fields and values of the hash stored at key."""
 
     @abstractmethod
-    def hset(self, key: str, field: str, value: str, ttl: int | None) -> int:
+    def hset(self, key: str, field: str, value: str, ttl: int | None = None) -> int:
         """Sets the specified field to a value in the hash stored at key."""
 
     @abstractmethod

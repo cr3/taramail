@@ -37,10 +37,7 @@ from taramail.models import (
     SpamaliasModel,
 )
 from taramail.schemas import DomainStr
-from taramail.store import (
-    RedisStore,
-    Store,
-)
+from taramail.store import Store
 from taramail.units import (
     gibi,
     kebi,
@@ -128,7 +125,7 @@ class DomainUpdate(BaseModel):
 class DomainManager:
 
     db: DBSession
-    store: Store = field(factory=RedisStore.from_env)
+    store: Store
     dockerapi: HTTPSession = HTTPSession("http://dockerapi/")
     dkim_manager: DKIMManager = field(default=Factory(
         lambda self: DKIMManager(self.store),
@@ -156,7 +153,7 @@ class DomainManager:
                 .where(DomainModel.domain == domain)
             ).one()
         except NoResultFound as e:
-            raise DomainNotFoundError(f"Domain name {domain} is invalid") from e
+            raise DomainNotFoundError(f"Domain name {domain} not found") from e
 
         mailbox_data_domain = self._get_mailbox_data_domain(domain)
         sum_quota_in_use = self._get_sum_quota_in_use(domain)
@@ -277,7 +274,7 @@ class DomainManager:
 
         return model
 
-    def delete_domain(self, domain: DomainStr):
+    def delete_domain(self, domain: DomainStr) -> None:
         if self.db.scalar(
             select(MailboxModel)
             .where(MailboxModel.domain == domain)

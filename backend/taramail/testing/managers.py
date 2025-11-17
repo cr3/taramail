@@ -13,9 +13,9 @@ from taramail.sogo import Sogo
 
 
 @pytest.fixture
-def alias_manager(db_session):
+def alias_manager(db_session, domain_manager):
     """Alias manager fixture."""
-    return AliasManager(db_session)
+    return AliasManager(db_session, domain_manager)
 
 
 @pytest.fixture

@@ -96,8 +96,8 @@ env.filters["regex_replace"] = lambda s, p, r: re.sub(p, r, s)
 templates = Jinja2Templates(env=env)
 
 
-def get_alias_manager(db: DbDep):
-    return AliasManager(db)
+def get_alias_manager(db: DbDep, domain_manager: "DomainManagerDep"):
+    return AliasManager(db, domain_manager)
 
 AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
 

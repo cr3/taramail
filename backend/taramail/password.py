@@ -9,10 +9,7 @@ from attrs import (
 )
 from pydantic import BaseModel
 
-from taramail.store import (
-    RedisStore,
-    Store,
-)
+from taramail.store import Store
 
 
 class PasswordValidationError(Exception):
@@ -54,7 +51,7 @@ class PasswordPolicyUpdate(BaseModel):
 @define(frozen=True)
 class PasswordPolicyManager:
 
-    store: Store = field(factory=RedisStore.from_env)
+    store: Store
     default: PasswordPolicy = field(factory=PasswordPolicy)
 
     def get_policy(self) -> PasswordPolicy:

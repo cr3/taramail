@@ -51,7 +51,7 @@ class Sogo:
     memcached: Store = field(factory=partial(MemcachedStore.from_host, "memcached"))
     default_password: str = "{SSHA256}A123A123A321A321A321B321B321B123B123B321B432F123E321123123321321"
 
-    def update_static_view(self, mailbox: str):
+    def update_static_view(self, mailbox: str) -> None:
 
         # Conditional password logic
         password_expr = case(
@@ -159,7 +159,7 @@ class Sogo:
 
         self.memcached.flushall()
 
-    def delete_user(self, username):
+    def delete_user(self, username) -> None:
         self.db.execute(delete(SogoUserProfileModel).where(SogoUserProfileModel.c_uid == username))
         self.db.execute(delete(SogoCacheFolderModel).where(SogoCacheFolderModel.c_uid == username))
         # TODO: Also delete by c_object

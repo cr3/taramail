@@ -49,7 +49,7 @@ class DKIMDetails(BaseModel):
     dkim_txt: str
 
 
-@define
+@define(frozen=True)
 class DKIMManager:
     """DKIM Manager for handling DKIM keys and operations."""
 

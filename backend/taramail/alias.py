@@ -1,4 +1,8 @@
-from attrs import define
+from attrs import (
+    Factory,
+    define,
+    field,
+)
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -16,7 +20,6 @@ from sqlalchemy.exc import NoResultFound
 
 from taramail.db import DBSession
 from taramail.domain import (
-    DomainDetails,
     DomainManager,
 )
 from taramail.models import (
@@ -106,6 +109,10 @@ class AliasUpdate(AliasGoto):
 class AliasManager:
 
     db: DBSession
+    domain_manager: DomainManager = field(default=Factory(
+        lambda self: DomainManager(self.db, None),
+        takes_self=True,
+    ))
 
     def get_alias(self, address: EmailStr) -> AliasModel:
         try:
@@ -155,7 +162,7 @@ class AliasManager:
 
         # Validate domain limits.
         local_part, domain = alias_create.address.split("@")
-        domain_details = self._get_domain_details(domain)
+        domain_details = self.domain_manager.get_domain_details(domain)
         if not domain_details.aliases_left:
             raise AliasValidationError("Max aliases exceeded")
 
@@ -252,7 +259,3 @@ class AliasManager:
             goto = None
 
         return goto
-
-    def _get_domain_details(self, domain) -> DomainDetails:
-        domain_manager = DomainManager(self.db)
-        return domain_manager.get_domain_details(domain)
