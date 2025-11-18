@@ -37,7 +37,10 @@ from taramail.models import (
     SogoFolderInfoModel,
     SogoQuickContactModel,
 )
-from taramail.schemas import DomainStr
+from taramail.schemas import (
+    AliasStr,
+    DomainStr,
+)
 from taramail.store import Store
 
 
@@ -349,7 +352,7 @@ class RspamdBcc:
     db: DBSession
 
     @validate_call
-    def get_bcc_dest(self, rcpt: EmailStr | None = None, sender: EmailStr | None = None) -> str:
+    def get_bcc_dest(self, rcpt: AliasStr | None = None, sender: AliasStr | None = None) -> str:
         """Get BCC destination for given recipient or sender."""
         for local_dest, bcc_type in [
             (rcpt, "rcpt"),
