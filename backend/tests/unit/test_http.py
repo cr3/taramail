@@ -3,14 +3,20 @@
 import pytest
 import responses
 
-from taramail.http import (
-    HTTP_METHODS,
-    HTTPSession,
-)
+from taramail.http import HTTPSession
 
 
 @responses.activate
-@pytest.mark.parametrize("method", HTTP_METHODS)
+@pytest.mark.parametrize("method", [
+    "GET",
+    "HEAD",
+    "OPTIONS",
+    "POST",
+    "PUT",
+    "DELETE",
+    "CONNECT",
+    "PATCH",
+])
 def test_http_session_request(method):
     """The HTTP session request should append the path to the base URL."""
     responses.add(

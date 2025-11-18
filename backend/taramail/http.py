@@ -7,17 +7,6 @@ from yarl import URL
 
 logger = logging.getLogger(__name__)
 
-HTTP_METHODS = {
-    "GET",
-    "HEAD",
-    "OPTIONS",
-    "POST",
-    "PUT",
-    "DELETE",
-    "CONNECT",
-    "PATCH",
-}
-
 class HTTPSession(Session):
     """An HTTP session with origin."""
 
