@@ -33,7 +33,7 @@ class Store(ABC):
         """Get the value of key."""
 
     @abstractmethod
-    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:
         """Set key to hold the string value."""
 
     @abstractmethod
@@ -110,7 +110,7 @@ class MemcachedStore(Store):
 
         return value
 
-    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:
         """See `Store.set`."""
         if ttl is None:
             ttl = -1
@@ -222,7 +222,7 @@ class MemoryStore(Store):
 
         return record.data
 
-    def set(self, key: str, value: str, ttl: int | None = None) -> bool:  # noqa: A003
+    def set(self, key: str, value: str, ttl: int | None = None) -> bool:
         """See `Store.set`."""
         record = MemoryRecord.from_ttl(str(value), ttl)
         self.records[key] = record

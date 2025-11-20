@@ -197,13 +197,10 @@ class NetfilterTables:
     def check(self, chain: str):
         chain_name = self.chains["filter"][chain]
         if chain_name:
-            position = 0
             kernel_ruleset = self.list_chain(table="filter", name=chain_name)
-            for obj in kernel_ruleset["nftables"]:
+            for position, obj in enumerate(kernel_ruleset["nftables"]):
                 if "rule" in obj and obj["rule"].get("comment") == self.comment:
                     return position
-
-                position += 1
 
         return -1
 
@@ -677,7 +674,7 @@ class Netfilter:
         self.bans[net]["last_attempt"] = current_attempt
 
         if self.bans[net]["attempts"] >= max_attempts:
-            cur_time = int(round(time.time()))
+            cur_time = round(time.time())
             net_ban_time = self.calc_net_ban_time(self.bans[net]["ban_counter"])
             logger.critical(
                 "Banning %(net)s for %(minutes)d minutes",
@@ -754,7 +751,7 @@ class Netfilter:
                 },
             )
         elif is_banned:
-            self.store.hset("F2B_PERM_BANS", net, int(round(time.time())))
+            self.store.hset("F2B_PERM_BANS", net, round(time.time()))
             logger.critical(
                 "Added host/network %(net)s to blacklist",
                 {

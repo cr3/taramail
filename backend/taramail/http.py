@@ -16,11 +16,7 @@ class HTTPSession(Session):
         self.timeout = timeout
 
     def __repr__(self):
-        return "{cls}(origin={origin!r}, timeout={timeout})".format(
-            cls=self.__class__.__name__,
-            origin=self.origin,
-            timeout=self.timeout,
-        )
+        return f"{self.__class__.__name__}(origin={self.origin!r}, timeout={self.timeout})"
 
     def request(self, method: str, path: str, **kwargs):
         """Send an HTTP request.

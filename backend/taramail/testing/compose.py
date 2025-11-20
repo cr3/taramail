@@ -54,11 +54,7 @@ class ComposeServer(ProcessServer):
         self.compose_files = compose_files
 
     def __repr__(self):
-        return "{cls}(pattern={pattern!r}, project={project!r})".format(
-            cls=self.__class__.__name__,
-            pattern=self.pattern,
-            project=self.project,
-        )
+        return f"{self.__class__.__name__}(pattern={self.pattern!r}, project={self.project!r})"
 
     def full_name(self, name):
         return f"{self.project}-{name}-1"

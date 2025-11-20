@@ -72,7 +72,7 @@ class TimestampMixin:
 
 class AliasModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     address: Mapped[str] = mapped_column(String(255))
     goto: Mapped[str] = mapped_column(Text)
     domain: Mapped[str] = mapped_column(String(255))
@@ -104,7 +104,7 @@ class AliasDomainModel(TimestampMixin, SQLModel):
 
 class AppPasswdModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
     mailbox: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"))
     domain: Mapped[str] = mapped_column(String(255))
@@ -127,11 +127,11 @@ class AppPasswdModel(TimestampMixin, SQLModel):
 
 class BccMapsModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     local_dest: Mapped[str] = mapped_column(String(255))
     bcc_dest: Mapped[str] = mapped_column(String(255))
     domain: Mapped[str] = mapped_column(String(255))
-    type: Mapped[str | None] = mapped_column(Enum("sender", "rcpt"))  # noqa: A003
+    type: Mapped[str | None] = mapped_column(Enum("sender", "rcpt"))
     active: Mapped[bool] = mapped_column(server_default="1")
 
     __tablename__ = "bcc_maps"
@@ -160,7 +160,7 @@ class DomainModel(TimestampMixin, SQLModel):
 class FilterconfModel(TimestampMixin, SQLModel):
 
     prefix: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    object: Mapped[str] = mapped_column(String(255), server_default="")  # noqa: A003
+    object: Mapped[str] = mapped_column(String(255), server_default="")
     option: Mapped[str] = mapped_column(String(50), server_default="")
     value: Mapped[str] = mapped_column(String(100), server_default="")
 
@@ -170,7 +170,7 @@ class FilterconfModel(TimestampMixin, SQLModel):
 
 class ImapsyncModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user2: Mapped[str] = mapped_column(String(255))
     host1: Mapped[str] = mapped_column(String(255))
     authmech1: Mapped[str] = mapped_column(Enum("PLAIN", "LOGIN", "CRAM-MD5"), server_default="PLAIN")
@@ -230,7 +230,7 @@ class MailboxModel(TimestampMixin, SQLModel):
 
 class QuarantineModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     qid: Mapped[str] = mapped_column(String(30))
     subject: Mapped[str | None] = mapped_column(String(500))
     score: Mapped[float | None] = mapped_column()
@@ -255,7 +255,7 @@ class QuarantineModel(SQLModel):
 class Quota2Model(SQLModel):
 
     username: Mapped[str] = mapped_column(String(255), primary_key=True)
-    bytes: Mapped[int] = mapped_column(BigInteger, server_default="0")  # noqa: A003
+    bytes: Mapped[int] = mapped_column(BigInteger, server_default="0")
     messages: Mapped[int] = mapped_column(BigInteger, server_default="0")
 
     __tablename__ = "quota2"
@@ -264,7 +264,7 @@ class Quota2Model(SQLModel):
 class Quota2ReplicaModel(SQLModel):
 
     username: Mapped[str] = mapped_column(String(255), primary_key=True)
-    bytes: Mapped[int] = mapped_column(BigInteger, server_default="0")  # noqa: A003
+    bytes: Mapped[int] = mapped_column(BigInteger, server_default="0")
     messages: Mapped[int] = mapped_column(BigInteger, server_default="0")
 
     __tablename__ = "quota2replica"
@@ -272,7 +272,7 @@ class Quota2ReplicaModel(SQLModel):
 
 class RecipientMapsModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     old_dest: Mapped[str] = mapped_column(String(255))
     new_dest: Mapped[str] = mapped_column(String(255))
     active: Mapped[bool] = mapped_column(server_default="0")
@@ -283,7 +283,7 @@ class RecipientMapsModel(TimestampMixin, SQLModel):
 
 class RelayHostsModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     hostname: Mapped[str] = mapped_column(String(255))
     username: Mapped[str] = mapped_column(String(255))
     password: Mapped[str] = mapped_column(String(255))
@@ -316,7 +316,7 @@ class SaslLogModel(SQLModel):
 
 class SenderAclModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     logged_in_as: Mapped[str] = mapped_column(String(255))
     send_as: Mapped[str] = mapped_column(String(255))
     external: Mapped[bool] = mapped_column(server_default="0")
@@ -326,7 +326,7 @@ class SenderAclModel(SQLModel):
 
 class SettingsmapModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     desc: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(server_default="0")
@@ -336,7 +336,7 @@ class SettingsmapModel(TimestampMixin, SQLModel):
 
 class SieveFiltersModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(ForeignKey("mailbox.username", ondelete="CASCADE"))
     script_desc: Mapped[str] = mapped_column(String(255))
     script_name: Mapped[str] = mapped_column(Enum("active", "inactive"))
@@ -374,7 +374,7 @@ class SogoStaticView(SQLModel):
 
 class SogoAclModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     c_folder_id: Mapped[int] = mapped_column()
     c_object: Mapped[str] = mapped_column(String(255))
     c_uid: Mapped[str] = mapped_column(String(255))
@@ -389,7 +389,7 @@ class SogoAclModel(SQLModel):
 
 class SogoAlarmsFolderModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     c_path: Mapped[str] = mapped_column(String(255))
     c_name: Mapped[str] = mapped_column(String(255))
     c_uid: Mapped[str] = mapped_column(String(255))
@@ -538,7 +538,7 @@ class SpamaliasModel(TimestampMixin, SQLModel):
 
 class TlsPolicyOverrideModel(TimestampMixin, SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     dest: Mapped[str] = mapped_column(String(255))
     policy: Mapped[str] = mapped_column(
         Enum("none", "may", "encrypt", "dane", "dane-only", "fingerprint", "verify", "secure")
@@ -552,7 +552,7 @@ class TlsPolicyOverrideModel(TimestampMixin, SQLModel):
 
 class TransportsModel(SQLModel):
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    id: Mapped[int] = mapped_column(primary_key=True)
     destination: Mapped[str] = mapped_column(String(255))
     nexthop: Mapped[str] = mapped_column(String(255))
     username: Mapped[str] = mapped_column(String(255), server_default="")

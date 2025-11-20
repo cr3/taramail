@@ -126,7 +126,7 @@ class DomainManager:
 
     db: DBSession
     store: Store
-    dockerapi: HTTPSession = HTTPSession("http://dockerapi/")
+    dockerapi: HTTPSession = field(default=HTTPSession("http://dockerapi/"))
     dkim_manager: DKIMManager = field(default=Factory(
         lambda self: DKIMManager(self.store),
         takes_self=True,

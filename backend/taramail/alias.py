@@ -161,7 +161,7 @@ class AliasManager:
         goto = self._validate_goto(address, alias_create)
 
         # Validate domain limits.
-        local_part, domain = alias_create.address.split("@")
+        _, domain = alias_create.address.split("@")
         domain_details = self.domain_manager.get_domain_details(domain)
         if not domain_details.aliases_left:
             raise AliasValidationError("Max aliases exceeded")

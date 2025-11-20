@@ -49,7 +49,7 @@ class Sogo:
 
     db: DBSession
     memcached: Store = field(factory=partial(MemcachedStore.from_host, "memcached"))
-    default_password: str = "{SSHA256}A123A123A321A321A321B321B321B123B123B321B432F123E321123123321321"
+    default_password: str = "{SSHA256}A123A123A321A321A321B321B321B123B123B321B432F123E321123123321321"  # noqa: S105
 
     def update_static_view(self, mailbox: str) -> None:
 
