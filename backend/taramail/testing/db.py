@@ -44,8 +44,11 @@ def db_url(request):
 @pytest.fixture(scope="session")
 def db_engine(db_url):
     """Create a SQLAlchemy engine."""
-    connect_args = {"check_same_thread": False}
-    engine = create_engine(db_url, connect_args=connect_args)
+    engine = create_engine(
+        db_url,
+        connect_args={"check_same_thread": False},
+        future=True,
+    )
     SQLModel.metadata.create_all(engine)
     try:
         yield engine
@@ -56,8 +59,13 @@ def db_engine(db_url):
 @pytest.fixture(scope="function")
 def db_session(db_engine):
     """Create a new database session with a rollback at the end of the test."""
-    # Create a sessionmaker to manage sessions
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    SessionLocal = sessionmaker(
+        bind=db_engine,
+        autoflush=False,
+        autocommit=False,
+        expire_on_commit=False,
+        future=True,
+    )
 
     # Create tables in the database
     connection = db_engine.connect()

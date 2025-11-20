@@ -17,7 +17,7 @@ class DBUnsupportedDialectError(Exception):
 def get_db_url(env=os.environ) -> URL:
     """Return a database URL from DB variables in the environment."""
     return URL.create(
-        drivername=env["DBDRIVER"],
+        drivername=env.get("DBDRIVER", "sqlite"),
         username=env.get("DBUSER"),
         password=env.get("DBPASS"),
         host=env.get("DBHOST"),
@@ -29,9 +29,6 @@ def get_db_url(env=os.environ) -> URL:
 @contextmanager
 def get_db_session(env=os.environ) -> Iterator[DBSession]:
     """Yield a database session."""
-    url = get_db_url(env)
-    engine = create_engine(url)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db_session = SessionLocal()
     try:
         yield db_session
@@ -48,3 +45,20 @@ def db_transaction(db: DBSession) -> Iterator[DBSession]:
     except Exception:
         db.rollback()
         raise
+
+
+DATABASE_URL = get_db_url()
+
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+)
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+    future=True,
+)
