@@ -4,7 +4,11 @@ import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import (
+    create_engine,
+    delete,
+    insert,
+)
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy.orm import sessionmaker
@@ -45,6 +49,21 @@ def db_transaction(db: DBSession) -> Iterator[DBSession]:
     except Exception:
         db.rollback()
         raise
+
+
+def db_replace_into(db: DBSession, model, values):
+    """Portable REPLACE INTO as DELETE + INSERT."""
+    pk_cols = list(model.__table__.primary_key)
+    pk_values = {col.name: values[col.name] for col in pk_cols}
+
+    db.execute(
+        delete(model)
+        .where(*(getattr(model, col) == pk_values[col] for col in pk_values))
+    )
+    db.execute(
+        insert(model)
+        .values(**values)
+    )
 
 
 DATABASE_URL = get_db_url()
