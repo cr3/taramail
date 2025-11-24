@@ -1,5 +1,7 @@
 """Unique fixtures for data generation."""
 
+import socket
+import struct
 from datetime import UTC, datetime
 from functools import partial
 from secrets import choice
@@ -44,3 +46,9 @@ def unique_domain(unique, tld="com"):
     """Returns a domain unique to this factory instance."""
     suffix = f".{tld}"
     return unique("text", separator="", suffix=suffix)
+
+
+def unique_ip(unique, base="10.0.0.0"):
+    """Return an IP address unique to this factory instance."""
+    addr = unique("integer", struct.unpack(b"!I", socket.inet_aton(base))[0])
+    return socket.inet_ntoa(struct.pack(b"!I", addr))

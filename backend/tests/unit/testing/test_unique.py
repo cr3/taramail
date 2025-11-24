@@ -45,6 +45,11 @@ def test_unique_domain_twice(unique):
     assert unique("domain") != unique("domain")
 
 
+def test_unique_ip_twice(unique):
+    """Getting a IP twice should not return the same value."""
+    assert unique("ip") != unique("ip")
+
+
 class StubEnum(enum.Enum):
     """Stub enum."""
 
