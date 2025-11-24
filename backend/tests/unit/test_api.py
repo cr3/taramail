@@ -251,3 +251,44 @@ def test_api_delete_password_policy(api_app):
     response = api_app.get("/api/password_policy")
 
     assert_that(response.json(), has_entries(length=8))
+
+
+def test_sogo_auth_empty(api_app, unique):
+    """Getting sogo auth with empty credentials should return X-headers."""
+    response = api_app.get("/sogo-auth")
+    assert_that(response.headers, has_entries({
+        "X-User": "",
+        "X-Auth": "",
+        "X-Auth-Type": "",
+    }))
+
+
+def test_sogo_auth_valid(api_app, unique):
+    """Getting sogo auth with valid credentials should return basic X-headers."""
+    local_part = unique("text")
+    domain = unique("domain")
+    password = unique("password")
+    username = f"{local_part}@{domain}"
+    api_app.post("/api/domains", json={
+        "domain": domain,
+        "restart_sogo": False,
+    })
+    api_app.post("/api/mailboxes", json={
+        "local_part": local_part,
+        "domain": domain,
+        "password": password,
+        "password2": password,
+    })
+    response = api_app.get("/sogo-auth", auth=(username, password))
+    assert_that(response.headers, has_entries({
+        "X-User": username,
+        "X-Auth": starts_with("Basic "),
+        "X-Auth-Type": "Basic",
+    }))
+
+
+def test_sogo_auth_invalid(api_app, unique):
+    """Getting sogo auth with invalid credentials should return 401."""
+    username, password = unique("email"), unique("password")
+    response = api_app.get("/sogo-auth", auth=(username, password))
+    assert response.status_code == 401

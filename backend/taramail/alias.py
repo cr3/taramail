@@ -248,10 +248,13 @@ class AliasManager:
                 raise AliasValidationError("Cannot alias an address to itself")
 
             for username in gotos:
-                if self.db.scalar(select(MailboxModel).filter(
+                if self.db.scalar(
+                    select(MailboxModel)
+                    .filter(
                         MailboxModel.kind.in_(["location", "thing", "group"]),
                         MailboxModel.username == username,
-                    ).limit(1)):
+                    ).limit(1)
+                ):
                     raise AliasNotFoundError(f"Goto username is invalid: {username}")
 
             goto = ",".join(gotos)

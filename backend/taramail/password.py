@@ -58,10 +58,10 @@ class PasswordPolicyManager:
         if value := self.store.hgetall("PASSWORD_POLICY"):
             return PasswordPolicy(**value)
         else:
-            return self.default.copy()
+            return self.default.model_copy()
 
     def update_policy(self, policy_update: PasswordPolicyUpdate) -> PasswordPolicy:
-        for policy in PasswordPolicy.__fields__:
+        for policy in PasswordPolicy.model_fields:
             value = getattr(policy_update, policy)
             if value is not None:
                 self.store.hset("PASSWORD_POLICY", policy, value)

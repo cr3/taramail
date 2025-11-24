@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from taramail.alias import AliasManager
+from taramail.auth import AuthManager
 from taramail.dkim import DKIMManager
 from taramail.domain import DomainManager
 from taramail.mailbox import MailboxManager
@@ -16,6 +17,12 @@ from taramail.sogo import Sogo
 def alias_manager(db_session, domain_manager):
     """Alias manager fixture."""
     return AliasManager(db_session, domain_manager)
+
+
+@pytest.fixture
+def auth_manager(db_session):
+    """Authentication manager fixture."""
+    return AuthManager(db_session)
 
 
 @pytest.fixture

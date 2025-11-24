@@ -2,6 +2,7 @@
 
 import logging
 import re
+from base64 import b64encode
 from pathlib import Path
 from typing import Annotated
 
@@ -14,6 +15,10 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from fastapi.security import (
+    HTTPBasic,
+    HTTPBasicCredentials,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import (
@@ -31,6 +36,11 @@ from taramail.alias import (
     AliasNotFoundError,
     AliasUpdate,
     AliasValidationError,
+)
+from taramail.auth import (
+    AuthContext,
+    AuthMailboxBackend,
+    AuthManager,
 )
 from taramail.db import db_transaction
 from taramail.deps import (
@@ -100,6 +110,14 @@ def get_alias_manager(db: DbDep, domain_manager: "DomainManagerDep"):
     return AliasManager(db, domain_manager)
 
 AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
+
+def get_auth_manager(db: DbDep):
+    backends = [
+        AuthMailboxBackend(db)
+    ]
+    return AuthManager(backends)
+
+AuthManagerDep = Annotated[AuthManager, Depends(get_auth_manager)]
 
 def get_dkim_manager(store: StoreDep):
     return DKIMManager(store)
@@ -313,11 +331,34 @@ def get_rspamd_error(request: Request, queue: QueueDep) -> None:
     raise HTTPException(401, "Invalid password")
 
 
+security = HTTPBasic(auto_error=False)
+
 @app.get("/sogo-auth")
-def get_sogo_auth(response: Response) -> None:
-    response.headers["X-User"] = ""
-    response.headers["X-Auth"] = ""
-    response.headers["X-Auth-Type"] = ""
+def get_sogo_auth(credentials: Annotated[HTTPBasicCredentials | None, Depends(security)], manager: AuthManagerDep, request: Request, response: Response) -> None:
+    if credentials:
+        ip = request.headers.get("X-Real-IP", request.client.host)
+        original_uri = request.headers.get("X-Original-URI", "")
+        if re.match(r"^(\/SOGo|)\/dav.*", original_uri):
+            service = "dav"
+        elif re.match(r"/^(\/SOGo|)\/Microsoft-Server-ActiveSync.*/", original_uri):
+            service = "eas"
+        else:
+            service = "api"
+
+        username = credentials.username
+        password = credentials.password
+        context = AuthContext(ip=ip, service=service)
+        if not manager.authenticate(username, password, context):
+            raise HTTPException(401, "Invalid login")
+
+        basic = b64encode(f"{username}:{password}".encode()).decode()
+        response.headers["X-User"] = username
+        response.headers["X-Auth"] = f"Basic {basic}"
+        response.headers["X-Auth-Type"] = "Basic"
+    else:
+        response.headers["X-User"] = ""
+        response.headers["X-Auth"] = ""
+        response.headers["X-Auth-Type"] = ""
 
 
 error_handlers = {
