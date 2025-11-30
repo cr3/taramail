@@ -20,5 +20,6 @@ jobs:
           script: |
             cd ${{ secrets.WORK_DIR }}
             git checkout ${{ secrets.MAIN_BRANCH }}
-            git pull
+            git pull origin ${{ secrets.MAIN_BRANCH }}
+            git submodule update --init --recursive
             make deploy

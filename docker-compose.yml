@@ -37,6 +37,35 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
 
+  blackbox-exporter:
+    build: blackbox_exporter
+    volumes:
+      - ./blackbox_exporter/config.yml.template:/etc/blackbox_exporter/config.yml.template:ro
+    environment:
+      - REDISPASS=${REDISPASS}
+    networks:
+      network:
+        aliases:
+          - blackbox-exporter
+    restart: always
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      network:
+        aliases:
+          - cadvisor
+    restart: always
+    devices:
+      - /dev/kmsg
+    privileged: true
+
   certbot:
     image: certbot/certbot:v5.1.0
     depends_on:
@@ -84,6 +113,29 @@ services:
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
+
+  custom-exporter:
+    build: custom_exporter
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rspamd:
+        condition: service_started
+    volumes:
+      - rspamd-vol-1:/var/lib/rspamd:ro
+      - mysql-socket-vol-1:/run/mysqld/
+    environment:
+      - DBNAME=${DBNAME}
+      - DBUSER=${DBUSER}
+      - DBPASS=${DBPASS}
+      - REDISPASS=${REDISPASS}
+    networks:
+      network:
+        aliases:
+          - custom-exporter
+    restart: always
 
   dockerapi:
     build: backend
@@ -197,35 +249,6 @@ services:
           - memcached
     restart: always
 
-  monit:
-    build: monit
-    depends_on:
-      certbot:
-        condition: service_started
-      dockerapi:
-        condition: service_started
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    volumes:
-      - rspamd-vol-1:/var/lib/rspamd
-      - mysql-socket-vol-1:/run/mysqld/
-    environment:
-      - DBNAME=${DBNAME}
-      - DBUSER=${DBUSER}
-      - DBPASS=${DBPASS}
-      - REDISPASS=${REDISPASS}
-    ports:
-      - '${MONIT_PORT:-127.0.0.1:2812}:2812'
-    networks:
-      network:
-        aliases:
-          - monit
-    restart: always
-    dns:
-      - ${IPV4_NETWORK:-172.22.1}.254
-
   mysql:
     image: mariadb:10.11
     depends_on:
@@ -256,6 +279,20 @@ services:
       retries: 3
     user: mysql
     stop_grace_period: 45s
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.16.0
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      network:
+        aliases:
+          - mysqld-exporter
+    command:
+      - '--mysqld.username=root:${DBROOT}'
+      - '--mysqld.address=mysql:3306'
+    restart: always
 
   netfilter:
     build: backend
@@ -310,6 +347,38 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
 
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4.0
+    depends_on:
+      nginx:
+        condition: service_started
+    networks:
+      network:
+        aliases:
+          - nginx-exporter
+    command:
+      - '-nginx.scrape-uri=http://nginx:80/nginx_status'
+    restart: always
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks:
+      network:
+        aliases:
+          - node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|run)($|/)"
+      - "--collector.filesystem.fs-types-exclude=^(sysfs|proc|auto|cgroup.*|tmpfs|devpts|nsfs|overlay)$"
+    restart: always
+    pid: host
+
   postfix:
     build: postfix
     depends_on:
@@ -350,6 +419,44 @@ services:
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
 
+  postfix-exporter:
+    build: postfix_exporter
+    depends_on:
+      postfix:
+        condition: service_started
+    volumes:
+      - postfix-vol-1:/var/spool/postfix:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      network:
+        aliases:
+          - postfix-exporter
+    command:
+      - '--docker.enable'
+      - '--docker.container.id=${COMPOSE_PROJECT_NAME:-taramail}-postfix-1'
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '${PROMETHEUS_PORT:-9090}:9090'
+    networks:
+      network:
+        aliases:
+          - prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+    restart: always
+
   redis:
     image: redis:7.4.7-alpine
     volumes:
@@ -370,6 +477,20 @@ services:
     sysctls:
       - net.core.somaxconn=4096
 
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.66.0
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDISPASS}
+    networks:
+      network:
+        aliases:
+          - redis-exporter
+    restart: always
+
   rspamd:
     build: rspamd
     depends_on:
@@ -383,6 +504,9 @@ services:
         condition: service_started
     volumes:
       - ./rspamd/custom/:/etc/rspamd/custom:z
+      - ./rspamd/override.d/:/etc/rspamd/override.d:Z
+      - ./rspamd/local.d/:/etc/rspamd/local.d:Z
+      - ./rspamd/lua/:/etc/rspamd/lua/:ro,Z
       - rspamd-vol-1:/var/lib/rspamd
     environment:
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
@@ -475,6 +599,7 @@ volumes:
   mysql-vol-1:
   mysql-socket-vol-1:
   postfix-vol-1:
+  prometheus-data:
   redis-vol-1:
   rspamd-vol-1:
   sogo-web-vol-1:

@@ -11,6 +11,7 @@ Released 2025-11-07
 -   Move IPv6 to taramux.
 -   Move frontend to taram.
 -   Rename project to taramail.
+-   Replace Monit with Prometheus.
 
 Version 0.2.0
 -------------

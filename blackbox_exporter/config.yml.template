@@ -1,0 +1,102 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: [200, 301, 302]
+      method: GET
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+
+  smtp_starttls:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+      query_response:
+        - expect: "^220 "
+        - send: "EHLO blackbox-exporter"
+        - expect: "^250-STARTTLS"
+        - send: "STARTTLS"
+        - expect: "^220"
+        - starttls: true
+        - send: "EHLO blackbox-exporter"
+        - expect: "^250 "
+        - send: "MAIL FROM:<monit@invalid>"
+        - expect: "^250 "
+        - send: "RCPT TO:<monit@localhost>"
+        - expect: "^250 "
+        - send: "DATA"
+        - expect: "^354 "
+        - send: ".\r\n"
+        - expect: "^250 "
+        - send: "QUIT"
+
+  smtp_lmtp_dovecot:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      query_response:
+        - expect: "^220 "
+        - send: "LHLO blackbox-exporter"
+        - expect: "^250 "
+        - send: "MAIL FROM:<monit@invalid>"
+        - expect: "^250 "
+        - send: "RCPT TO:<monit@invalid>"
+        - expect: "User doesn't exist"
+        - send: "QUIT"
+
+  imap_starttls:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+      query_response:
+        - expect: "^\\* OK"
+        - send: ". CAPABILITY"
+        - expect: "^\\* CAPABILITY"
+        - expect: "^\\. OK"
+        - send: ". STARTTLS"
+        - expect: "^\\. OK"
+        - starttls: true
+        - send: ". CAPABILITY"
+        - expect: "IMAP4rev1"
+        - send: ". LOGOUT"
+
+  imap_tls:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      tls: true
+      tls_config:
+        insecure_skip_verify: true
+      query_response:
+        - expect: "^\\* OK"
+        - send: ". CAPABILITY"
+        - expect: "IMAP4rev1"
+        - send: ". LOGOUT"
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+
+  redis_check:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      query_response:
+        - send: "AUTH ${REDISPASS}"
+        - expect: "^\\+OK"
+        - send: "PING"
+        - expect: "^\\+PONG"
+        - send: "QUIT"

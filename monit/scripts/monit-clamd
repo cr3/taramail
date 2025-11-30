@@ -1,8 +1,0 @@
-#!/usr/bin/bash
-
-err_count=0
-
-/usr/lib/nagios/plugins/check_clamd -4 -H clamd
-err_count=$(( ${err_count} + $? ))
-
-exit $err_count
