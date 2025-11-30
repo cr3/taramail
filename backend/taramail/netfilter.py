@@ -169,6 +169,9 @@ class NetfilterTables:
 
         for chain in ["input", "forward"]:
             position = self.check(chain)
+            if position is None:
+                continue
+
             if position < 0:
                 logger.critical(
                     "Target not found in %(family)s %(chain)s table, restarting container to fix it...",
@@ -196,11 +199,13 @@ class NetfilterTables:
 
     def check(self, chain: str):
         chain_name = self.chains["filter"][chain]
-        if chain_name:
-            kernel_ruleset = self.list_chain(table="filter", name=chain_name)
-            for position, obj in enumerate(kernel_ruleset["nftables"]):
-                if "rule" in obj and obj["rule"].get("comment") == self.comment:
-                    return position
+        if not chain_name:
+            return None
+
+        kernel_ruleset = self.list_chain(table="filter", name=chain_name)
+        for position, obj in enumerate(kernel_ruleset["nftables"]):
+            if "rule" in obj and obj["rule"].get("comment") == self.comment:
+                return position
 
         return -1
 
