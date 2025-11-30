@@ -258,7 +258,7 @@ if [[ $(stat -c %U /var/vmail/_garbage) != "vmail" ]] ; then chown -R vmail:vmai
 if [[ $(stat -c %U /var/vmail_index) != "vmail" ]] ; then chown -R vmail:vmail /var/vmail_index ; fi
 
 # Cleanup random user maildirs
-rm -rf /var/vmail/taramail.local/*
+rm -rf /var/vmail/mail.local/*
 # Cleanup PIDs
 [[ -f /tmp/quarantine_notify.pid ]] && rm /tmp/quarantine_notify.pid
 
