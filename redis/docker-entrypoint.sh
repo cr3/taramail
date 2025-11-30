@@ -12,6 +12,7 @@ if [ "$1" = 'redis-server' -a "$(id -u)" = '0' ]; then
   # create configuration file to require a password
   cat <<EOF > /redis.conf
 requirepass $REDISPASS
+user quota_notify on nopass ~QW_* -@all +get +hget +ping
 EOF
 
   # chown and run as redis user
