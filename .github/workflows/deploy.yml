@@ -20,5 +20,5 @@ jobs:
           script: |
             cd ${{ secrets.WORK_DIR }}
             git checkout ${{ secrets.MAIN_BRANCH }}
-            git pull
+            git pull --recurse-submodules
             make deploy

@@ -1,0 +1,3 @@
+[submodule "postfix_exporter"]
+	path = postfix_exporter
+	url = git@github.com:cr3/postfix_exporter.git

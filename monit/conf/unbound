@@ -1,3 +1,0 @@
-check program unbound with path "/opt/monit/scripts/monit-unbound"
-  restart program = "/usr/bin/bash -c '/usr/bin/curl --silent -X POST http://dockerapi/services/unbound/restart && sleep 30'"
-  if status != 0 for 5 cycles then restart

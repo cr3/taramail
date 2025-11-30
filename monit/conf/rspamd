@@ -1,3 +1,0 @@
-check program rspamd with path "/opt/monit/scripts/monit-rspamd"
-  restart program = "/usr/bin/curl --silent -X POST http://dockerapi/services/rspamd/restart"
-  if status != 0 for 5 cycles then restart

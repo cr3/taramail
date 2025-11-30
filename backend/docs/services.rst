@@ -152,40 +152,6 @@ repeated database queries and speeding up email operations.
 
 .. _Memcached: https://memcached.org/
 
-Monit
------
-
-`Monit`_ is used to ensure the reliability and availability of its
-services. Here's why it's important:
-
-* **Service Monitoring**
-
-  Continuously monitors the health and status of critical services (like
-  the mail server, databases, and web interface). If any service fails
-  or becomes unresponsive, Monit can take action to restart or recover it.
-
-* **Automated Recovery**
-
-  If a container or service crashes, restarts it automatically. This
-  minimizes downtime and ensures that the mail server stays operational
-  without requiring manual intervention.
-
-* **Preventing Downtime**
-
-  By proactively monitoring the system, helps prevent service
-  interruptions, ensuring that any issues are detected and addressed as
-  soon as they occur.
-
-* **Error Detection**
-
-  Detects misconfigurations or errors in the Docker containers and helps
-  to maintain the proper functioning of the entire mail server stack.
-
-In summary, Monit enhances reliability, automated recovery, and service
-uptime, ensuring the mail server remains resilient and functional.
-
-.. _Monit: https://mmonit.com/monit/
-
 Postfix
 -------
 
@@ -223,6 +189,65 @@ architecture:
   email security.
 
 .. _Postfix: https://www.postfix.org/
+
+Prometheus
+----------
+
+`Prometheus`_ is a modern monitoring and alerting system used to ensure
+the reliability and observability of all services. Here's why it's chosen:
+
+* **Time-Series Metrics Collection**
+
+  Collects and stores time-series data from all components (Postfix,
+  Dovecot, Rspamd, MySQL, Redis, Nginx, etc.), providing detailed
+  insights into performance, resource usage, and service health over time.
+
+* **Service Health Monitoring**
+
+  Continuously monitors critical services through native exporters and
+  custom health checks. If services fail or become degraded, Prometheus
+  can detect and alert on these issues.
+
+* **Multi-Dimensional Data Model**
+
+  Uses labels to organize metrics, allowing flexible queries across
+  different services, instances, and dimensions. This makes it easy to
+  analyze specific components or aggregate system-wide views.
+
+* **Pull-Based Architecture**
+
+  Services expose metrics endpoints that Prometheus scrapes at regular
+  intervals. This design is more reliable and scalable than push-based
+  systems, especially in containerized environments.
+
+* **Rich Query Language (PromQL)**
+
+  Provides a powerful query language for analyzing metrics, calculating
+  rates, aggregations, and identifying trends or anomalies in service
+  behavior.
+
+* **Integration with Alerting Systems**
+
+  Can integrate with Alertmanager to send notifications when issues are
+  detected, enabling proactive incident response.
+
+* **Native Docker Support**
+
+  Works seamlessly with containerized applications through service
+  discovery and dedicated exporters (cAdvisor for containers,
+  node-exporter for host metrics).
+
+* **Community and Ecosystem**
+
+  Benefits from a large ecosystem of exporters and integrations,
+  including official exporters for MySQL, Redis, Nginx, and Postfix,
+  plus custom exporters for specialized mail server checks.
+
+In summary, Prometheus provides comprehensive observability, enabling
+data-driven insights into system performance, proactive issue detection,
+and long-term trend analysis for maintaining a reliable mail server.
+
+.. _Prometheus: https://prometheus.io/
 
 Rspamd
 ------

@@ -1,3 +1,0 @@
-check program redis with path "/opt/monit/scripts/monit-redis"
-  restart program = "/usr/bin/curl --silent -X POST http://dockerapi/services/redis/restart"
-  if status != 0 for 5 cycles then restart

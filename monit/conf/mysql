@@ -1,3 +1,0 @@
-check program mysql with path "/opt/monit/scripts/monit-mysql"
-  restart program = "/usr/bin/curl --silent -X POST http://dockerapi/services/mysql/restart"
-  if status != 0 for 5 cycles then restart
