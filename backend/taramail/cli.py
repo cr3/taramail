@@ -91,6 +91,9 @@ def add_command_args(args_parser, schema):
     # Add schema paths.
     for path, methods in schema.get("paths", {}).items():
         for method, details in methods.items():
+            if method == "head":
+                continue
+
             default_name = f"{method}_{path.strip('/').replace('/', '_')}"
             command_name = details.get("operationId", default_name)
             command_parser = command.add_parser(
@@ -166,6 +169,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         data = args.func(session, vars(args))
+    except AttributeError:
+        parser.print_usage()
+        sys.exit(2)
     except RequestException as e:
         message = e.response.json()
         parser.error(message.get('detail') or message['error'])
