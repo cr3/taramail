@@ -83,12 +83,67 @@ def make_args_parser():
     return args_parser
 
 
-def add_command_args(args_parser, schema):
-    command = args_parser.add_subparsers(
-        dest="command",
-    )
+def add_parameter_args(command_parser, parameters):
+    """Add query/path parameters to command parser."""
+    keys = {}
+    for param in parameters:
+        keys[param["name"]] = param["in"]
+        required = param.get("required", False)
+        param_name = param["name"] if required else f"--{param['name']}"
+        param_type = get_arg_type(param["schema"].get("type"))
+        command_parser.add_argument(
+            param_name,
+            type=param_type,
+            help=param["schema"].get("title"),
+        )
 
-    # Add schema paths.
+    return keys
+
+
+def add_body_args(command_parser, content_schema, required_fields):
+    """Add request body properties to command parser."""
+    keys = {}
+    for prop_name, prop_details in content_schema.get("properties", {}).items():
+        keys[prop_name] = "body"
+        required = prop_name in required_fields
+        arg_name = prop_name if required else f"--{prop_name}"
+        arg_default = prop_details.get("default")
+        arg_type = get_arg_type(prop_details.get("type"))
+
+        kwargs = {}
+        if arg_type is bool:
+            if arg_default:
+                arg_name = arg_name.replace(prop_name, f"no_{prop_name}")
+                kwargs["action"] = "store_false"
+            else:
+                kwargs["action"] = "store_true"
+        else:
+            kwargs["type"] = arg_type
+
+        if not required:
+            arg_name = arg_name.replace("_", "-")
+            kwargs["dest"] = prop_name
+
+        command_parser.add_argument(
+            arg_name,
+            default=arg_default,
+            help=prop_details.get("title"),
+            **kwargs,
+        )
+
+    return keys
+
+
+def resolve_schema_ref(schema, content_schema):
+    """Resolve $ref in schema to actual schema definition."""
+    if ref := content_schema.get("$ref"):
+        return only(lookup(schema, *ref.split("/")[1:]))
+    return content_schema
+
+
+def add_command_args(args_parser, schema):
+    command = args_parser.add_subparsers(dest="command")
+
     for path, methods in schema.get("paths", {}).items():
         for method, details in methods.items():
             if method == "head":
@@ -101,50 +156,12 @@ def add_command_args(args_parser, schema):
                 help=details.get("summary", "No summary available"),
             )
 
-            # Add query/path parameters.
-            keys = {}
-            for param in details.get("parameters", []):
-                keys[param["name"]] = param["in"]
-                required = param.get("required", False)
-                param_name = param["name"] if required else f"--{param['name']}"
-                param_type = get_arg_type(param["schema"].get("type"))
-                command_parser.add_argument(
-                    param_name,
-                    type=param_type,
-                    help=param["schema"].get("title"),
-                )
+            keys = add_parameter_args(command_parser, details.get("parameters", []))
 
-            # Add requestBody properties.
             if content_schema := only(lookup(details, "requestBody", "content", "application/json", "schema")):
-                if ref := content_schema.get("$ref"):
-                    content_schema = only(lookup(schema, *ref.split("/")[1:]))
-
-                for prop_name, prop_details in content_schema.get("properties", {}).items():
-                    keys[prop_name] = "body"
-                    required = prop_name in content_schema.get("required", [])
-                    arg_name = prop_name if required else f"--{prop_name}"
-                    arg_default = prop_details.get("default")
-                    arg_type = get_arg_type(prop_details.get("type"))
-                    kwargs = {}
-                    if arg_type is bool:
-                        if arg_default:
-                            arg_name = arg_name.replace(prop_name, f"no_{prop_name}")
-                            kwargs["action"] = "store_false"
-                        else:
-                            kwargs["action"] = "store_true"
-                    else:
-                        kwargs["type"] = arg_type
-
-                    if not required:
-                        arg_name = arg_name.replace("_", "-")
-                        kwargs["dest"] = prop_name
-
-                    command_parser.add_argument(
-                        arg_name,
-                        default=arg_default,
-                        help=prop_details.get("title"),
-                        **kwargs,
-                    )
+                content_schema = resolve_schema_ref(schema, content_schema)
+                required_fields = content_schema.get("required", [])
+                keys.update(add_body_args(command_parser, content_schema, required_fields))
 
             command_parser.set_defaults(
                 func=lambda session, args, m=method, p=path, keys=keys: call_api(session, m, p, args, keys),
