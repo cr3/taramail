@@ -1,7 +1,7 @@
-FROM alpine:3.20
+FROM alpine:3.21
 
 # renovate: datasource=github-releases depName=tianon/gosu versioning=semver-coerced extractVersion=^(?<version>.*)$
-ARG GOSU_VERSION=1.16
+ARG GOSU_VERSION=1.17
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -63,7 +63,7 @@ RUN addgroup -g 5000 vmail \
   perl-par-packer \
   perl-parse-recdescent \
   perl-lockfile-simple \
-  libproc \
+  libproc2 \
   perl-readonly \
   perl-regexp-common \
   perl-sys-meminfo \
