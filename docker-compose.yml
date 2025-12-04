@@ -12,6 +12,7 @@ services:
       redis:
         condition: service_started
     volumes:
+      - backend-docs:/app/docs/html:ro
       - mysql-socket-vol-1:/run/mysqld/
     environment:
       - DBDRIVER=mysql
@@ -272,6 +273,7 @@ services:
       sogo:
         condition: service_started
     volumes:
+      - backend-docs:/usr/share/nginx/html/docs:ro
       - certbot-www:/web:ro,z
       - certbot-certs:/etc/letsencrypt:ro,z
       - ./nginx/conf.d/:/etc/nginx/conf.d/:z
@@ -488,6 +490,7 @@ networks:
         - subnet: ${IPV4_NETWORK:-172.22.1}.0/24
 
 volumes:
+  backend-docs:
   certbot-certs:
   certbot-www:
   clamd-vol-1:
