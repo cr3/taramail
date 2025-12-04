@@ -88,6 +88,19 @@ location /api/ {
     proxy_redirect off;
 }
 
+location /docs/ {
+    alias /usr/share/nginx/html/docs/;
+    index index.html;
+    try_files $uri $uri/ =404;
+
+    # Allow public access to docs
+    auth_request off;
+
+    # Add appropriate caching
+    expires 1h;
+    add_header Cache-Control "public, must-revalidate";
+}
+
 location /sogo-auth-verify {
     internal;
     proxy_set_header  X-Original-URI $request_uri;

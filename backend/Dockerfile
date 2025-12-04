@@ -28,10 +28,14 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 COPY poetry.lock pyproject.toml ./
-RUN poetry install --with=docs --no-root
+RUN poetry install --no-root --without=test
 
 COPY . ./
-RUN poetry install --with=docs
+RUN poetry install --without=test
+
+FROM build AS docs
+
+RUN poetry install --with=docs --no-root
 RUN poetry run sphinx-build -W -d build/doctrees docs build/html
 
 FROM base AS runtime
@@ -47,3 +51,4 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 COPY --from=build /app ./
+COPY --from=docs /app/build/html ./docs/html
