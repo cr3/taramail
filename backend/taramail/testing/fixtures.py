@@ -7,13 +7,14 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from taramail.api import app
+from taramail.api import app as _api_app
 from taramail.deps import (
     get_db,
     get_memcached,
     get_queue,
     get_store,
 )
+from taramail.exporter import app as _exporter_app
 from taramail.logger import setup_logger
 from taramail.testing.logger import LoggerHandler
 
@@ -21,10 +22,10 @@ from taramail.testing.logger import LoggerHandler
 @pytest.fixture
 def api_app(db_session, memcached_store, redis_queue, redis_store):
     """API testing app."""
-    app.dependency_overrides[get_db] = lambda: db_session
-    app.dependency_overrides[get_memcached] = lambda: memcached_store
-    app.dependency_overrides[get_queue] = lambda: redis_queue
-    app.dependency_overrides[get_store] = lambda: redis_store
+    _api_app.dependency_overrides[get_db] = lambda: db_session
+    _api_app.dependency_overrides[get_memcached] = lambda: memcached_store
+    _api_app.dependency_overrides[get_queue] = lambda: redis_queue
+    _api_app.dependency_overrides[get_store] = lambda: redis_store
 
     url = db_session.bind.engine.url
     env = {
@@ -32,7 +33,22 @@ def api_app(db_session, memcached_store, redis_queue, redis_store):
         "DBNAME": url.database,
     }
 
-    with patch.dict(os.environ, env), TestClient(app) as client:
+    with patch.dict(os.environ, env), TestClient(_api_app) as client:
+        yield client
+
+
+@pytest.fixture
+def exporter_app(db_session):
+    """Exporter testing app."""
+    _exporter_app.dependency_overrides[get_db] = lambda: db_session
+
+    url = db_session.bind.engine.url
+    env = {
+        "DBDRIVER": url.drivername,
+        "DBNAME": url.database,
+    }
+
+    with patch.dict(os.environ, env), TestClient(_exporter_app) as client:
         yield client
 
 

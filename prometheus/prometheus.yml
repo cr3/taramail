@@ -115,8 +115,11 @@ scrape_configs:
         replacement: blackbox-exporter:9115
 
   - job_name: 'custom-checks'
+    metrics_path: /check
+    params:
+      rspamd_host: [rspamd]
     static_configs:
-      - targets: ['custom-exporter:9101']
+      - targets: ['custom-exporter:80']
 
   - job_name: 'dovecot'
     static_configs:

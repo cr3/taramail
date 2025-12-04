@@ -40,6 +40,8 @@ RUN poetry run sphinx-build -W -d build/doctrees docs build/html
 
 FROM base AS runtime
 
+EXPOSE 80
+
 ENV PATH="/app/.venv/bin:$PATH"
 
 RUN apk add --no-cache \
