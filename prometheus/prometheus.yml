@@ -114,10 +114,6 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
-
   - job_name: 'custom-checks'
     static_configs:
       - targets: ['custom-exporter:9101']
@@ -133,10 +129,6 @@ scrape_configs:
   - job_name: 'nginx'
     static_configs:
       - targets: ['nginx-exporter:9113']
-
-  - job_name: 'node'
-    static_configs:
-      - targets: ['node-exporter:9100']
 
   - job_name: 'postfix'
     static_configs:
