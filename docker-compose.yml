@@ -83,22 +83,21 @@ services:
       - ${IPV4_NETWORK:-172.22.1}.254
 
   custom-exporter:
-    build: custom_exporter
+    build: backend
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
       rspamd:
         condition: service_started
     volumes:
-      - rspamd-vol-1:/var/lib/rspamd:ro
       - mysql-socket-vol-1:/run/mysqld/
     environment:
+      - DBDRIVER=mysql
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
       - REDISPASS=${REDISPASS}
+    command: uvicorn --host=0.0.0.0 --port=80 taramail.exporter:app --log-config=/app/log-config.yaml
     restart: always
 
   dockerapi:
