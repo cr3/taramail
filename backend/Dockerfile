@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION=3.13
-FROM python:${PYTHON_VERSION}-slim AS base
+FROM python:${PYTHON_VERSION}-alpine AS base
 
 ARG POETRY_VERSION=2.1.1
 ENV PYTHONUNBUFFERED=1 \
@@ -16,13 +16,13 @@ FROM base AS build
 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-RUN apt update \
-  && apt install -y --no-install-recommends \
-  build-essential \
+RUN apk add --no-cache \
+  build-base \
   curl \
-  libmariadb-dev \
+  libffi-dev \
+  mariadb-connector-c-dev \
   libmemcached-dev \
-  pkg-config \
+  pkgconf \
   && curl -sSL https://install.python-poetry.org | python3 -
 
 WORKDIR /app
@@ -38,12 +38,11 @@ FROM base AS runtime
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-RUN apt update \
-  && apt install -y --no-install-recommends \
-  libmariadb3 \
-  libmemcached11 \
+RUN apk add --no-cache \
+  mariadb-connector-c \
+  libmemcached-libs \
   nftables \
-  && rm -rf /var/lib/apt/lists/*
+  py3-nftables
 
 WORKDIR /app
 
