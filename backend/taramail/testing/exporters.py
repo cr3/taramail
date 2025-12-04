@@ -40,6 +40,14 @@ def blackbox_exporter(compose_server):
 
 
 @pytest.fixture(scope="session")
+def custom_exporter(compose_server):
+    """Custom exporter fixture."""
+    server = compose_server("Application startup complete")
+    with server.run("custom-exporter") as service:
+        yield Exporter.from_service(service)
+
+
+@pytest.fixture(scope="session")
 def dovecot_exporter(dovecot_service):
     """Dovecot exporter fixture."""
     return Exporter(dovecot_service.ip, 9166)
