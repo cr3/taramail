@@ -22,10 +22,10 @@ services:
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
     command: >
-      bash -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
+      sh -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
     healthcheck:
-      test: [ "CMD", "bash", "-c", ":> /dev/tcp/127.0.0.1/80" ]
+      test: [ "CMD", "python", "-c", "import socket; import sys; s=socket.socket(); s.settimeout(1); sys.exit(s.connect_ex(('localhost',80))>0)"]
       start_period: 10s
       interval: 10s
       timeout: 5s
