@@ -4,14 +4,14 @@ PYTHON := poetry run python
 TOUCH := $(PYTHON) -c 'import sys; from pathlib import Path; Path(sys.argv[1]).touch()'
 
 poetry.lock: pyproject.toml
-	@echo Updating lock file
+	@echo "==> Updating lock file..."
 	@poetry lock
 
 # Build .venv with deps.
 $(VENV): poetry.lock
-	@echo Building Python virtualenv
+	@echo "==> Building Python virtualenv..."
 	@$(PYTHON) -m venv $@
-	@echo Installing Poetry environment
+	@echo "==> Installing Poetry environment..."
 	@poetry install
 	@$(TOUCH) $@
 
@@ -21,26 +21,26 @@ setup: $(VENV)
 
 .PHONY: check
 check: $(VENV)
-	@echo Checking Poetry lock: Running poetry check --lock
+	@echo "==> Checking Poetry lock..."
 	@poetry check --lock
-	@echo Linting code: Running pre-commit
+	@echo "==> Linting Python code..."
 	@poetry run ruff check .
 
 .PHONY: test
 test: $(VENV)
-	@echo Testing code: Running pytest
+	@echo "==> Testing Python code..."
 	@poetry run coverage run -p -m pytest
 
 .PHONY: coverage
 coverage: $(VENV)
-	@echo Testing covarage: Running coverage
+	@echo "==> Checking coverage..."
 	@poetry run coverage combine
 	@poetry run coverage html --skip-covered --skip-empty
 	@poetry run coverage report
 
 .PHONY: docs
 docs: $(VENV)
-	@echo Building docs: Running sphinx-build
+	@echo "==> Building docs..."
 	@poetry run sphinx-build -W -d build/doctrees docs build/html
 
 .DEFAULT_GOAL := test
