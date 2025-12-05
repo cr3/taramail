@@ -292,7 +292,7 @@ services:
       - ${IPV4_NETWORK:-172.22.1}.254
 
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:1.4.0
+    image: nginx/nginx-prometheus-exporter:1.5.1
     depends_on:
       nginx:
         condition: service_started
