@@ -26,7 +26,7 @@ services:
       sh -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
     healthcheck:
-      test: [ "CMD", "python", "-c", "import socket; import sys; s=socket.socket(); s.settimeout(1); sys.exit(s.connect_ex(('localhost',80))>0)"]
+      test: [ "CMD", "python", "-c", "import socket; import sys; s=socket.socket(); s.settimeout(1); sys.exit(s.connect_ex(('localhost',80))>0)" ]
       start_period: 10s
       interval: 10s
       timeout: 5s
@@ -299,6 +299,24 @@ services:
     command:
       - '-nginx.scrape-uri=http://nginx:80/nginx_status'
     restart: always
+
+  ofelia:
+    image: mcuadros/ofelia:0.3.19
+    depends_on:
+      dovecot:
+        condition: service_started
+      sogo:
+        condition: service_started
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=${TZ}
+    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-taramail}
+    restart: always
+    labels:
+      ofelia.enabled: "true"
+    security_opt:
+      - label=disable
 
   postfix:
     build: postfix
