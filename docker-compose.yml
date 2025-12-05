@@ -199,7 +199,7 @@ services:
         hard: 40000
 
   memcached:
-    image: memcached:alpine
+    image: memcached:1.6.39-alpine
     restart: always
 
   mysql:
