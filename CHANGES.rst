@@ -1,11 +1,12 @@
 Version 0.3.0
 -------------
 
-Released 2025-11-07
+Released 2025-12-05
 
 -   Add alias support.
 -   Add DKIM support.
 -   Add dynamic Rspamd settings.
+-   Add ofelia service.
 -   Add password policy.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
