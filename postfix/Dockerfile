@@ -46,6 +46,7 @@ COPY postfix.sh \
   /opt/
 COPY rspamd-pipe-ham \
   rspamd-pipe-spam \
+  whitelist-forwardinghosts \
   /usr/local/bin/
 COPY stop-supervisor.sh \
   /usr/local/sbin/

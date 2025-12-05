@@ -115,6 +115,10 @@ maildrop   unix  -       n       n       -       -       pipe flags=DRhu
 smtp_sender_cleanup unix n - y - 0 cleanup
   -o header_checks=$smtp_header_checks
 
+# start whitelist_fwd
+127.0.0.1:10027 inet n n n - 0 spawn user=nobody argv=/usr/local/bin/whitelist-forwardinghosts
+# end whitelist_fwd
+
 # start monit-specific
 # logs to local7 (hidden)
 589 inet n      -       n       -       -       smtpd
