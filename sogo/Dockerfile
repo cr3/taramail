@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG DEBIAN_VERSION=bookworm
 ARG SOGO_DEBIAN_REPOSITORY=http://www.axis.cz/linux/debian
 # renovate: datasource=github-releases depName=tianon/gosu versioning=semver-coerced extractVersion=^(?<version>.*)$
-ARG GOSU_VERSION=1.17
+ARG GOSU_VERSION=1.19
 ENV LC_ALL=C
 
 # Prerequisites
