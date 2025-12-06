@@ -1,7 +1,8 @@
-FROM debian:bookworm-slim
+ARG DEBIAN_RELEASE=bookworm
+FROM debian:${DEBIAN_RELEASE}-slim
 
+ARG DEBIAN_RELEASE
 ARG DEBIAN_FRONTEND=noninteractive
-ARG DEBIAN_VERSION=bookworm
 ARG SOGO_DEBIAN_REPOSITORY=http://www.axis.cz/linux/debian
 # renovate: datasource=github-releases depName=tianon/gosu versioning=semver-coerced extractVersion=^(?<version>.*)$
 ARG GOSU_VERSION=1.19
@@ -33,7 +34,7 @@ RUN echo "Building from repository $SOGO_DEBIAN_REPOSITORY" \
   && touch /usr/share/doc/sogo/empty.sh \
   && wget http://www.axis.cz/linux/debian/axis-archive-keyring.deb -O /tmp/axis-archive-keyring.deb \
   && apt install -y /tmp/axis-archive-keyring.deb \
-  && echo "deb [trusted=yes] ${SOGO_DEBIAN_REPOSITORY} ${DEBIAN_VERSION} sogo-v5" > /etc/apt/sources.list.d/sogo.list \
+  && echo "deb [trusted=yes] ${SOGO_DEBIAN_REPOSITORY} ${DEBIAN_RELEASE} sogo-v5" > /etc/apt/sources.list.d/sogo.list \
   && apt-get update && apt-get install -y --no-install-recommends \
     sogo \
     sogo-activesync \
