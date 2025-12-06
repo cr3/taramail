@@ -1,4 +1,5 @@
-FROM debian:bookworm-slim
+ARG DEBIAN_RELEASE=bookworm
+FROM debian:${DEBIAN_RELEASE}-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LC_ALL C
