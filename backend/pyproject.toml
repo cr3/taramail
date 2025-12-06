@@ -32,7 +32,7 @@ dependencies = [
     "prometheus-client (>=0.23.1,<1.0.0)",
     "pydantic[email] (>=2.12.3,<3.0.0)",
     "pylibmc (>=1.6.3,<2.0.0)",
-    "redis (>=5.2.1,<6.0.0)",
+    "redis (>=7.1.0,<7.2.0)",
     "requests (>=2.32.3,<3.0.0)",
     "sqlalchemy-utils (>=0.41.2,<1.0.0)",
     "sqlalchemy[asyncio] (>=2.0.37,<3.0.0)",
@@ -47,7 +47,7 @@ pyhamcrest = "^2.1.0"
 pytest = "^8.4.2"
 pytest-unique = "^0.1.6"
 pytest-xdocker = "^0.2.6"
-redis = "^5.2.1"
+redis = "^7.0.0"
 responses = "^0.25.6"
 
 [tool.poetry.group.check]
