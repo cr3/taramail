@@ -56,7 +56,7 @@ jobs:
         run: make test
 
       - name: "Upload coverage data"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-data-${{ matrix.python-version }}
           path: backend/.coverage.*
@@ -79,7 +79,7 @@ jobs:
           working-directory: backend
 
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: backend
           pattern: coverage-data-*
@@ -89,7 +89,7 @@ jobs:
         run: make coverage
 
       - name: Upload HTML report if check failed.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: backend-report
           path: htmlcov
