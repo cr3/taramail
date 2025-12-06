@@ -1,4 +1,4 @@
-FROM alpine:3.21
+FROM alpine:3.23
 
 # renovate: datasource=github-releases depName=tianon/gosu versioning=semver-coerced extractVersion=^(?<version>.*)$
 ARG GOSU_VERSION=1.19
