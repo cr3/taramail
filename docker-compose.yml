@@ -311,7 +311,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - TZ=${TZ}
-    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-taramail}
+    command: daemon --docker
     restart: always
     labels:
       ofelia.enabled: "true"
