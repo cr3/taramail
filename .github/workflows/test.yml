@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions/setup-poetry-env
         with:
           poetry-options: --only=check
-          python-version: "3.11"
+          python-version: "3.13"
           working-directory: backend
 
       - name: Run check target
@@ -74,7 +74,7 @@ jobs:
       - name: Set up Python environment
         uses: ./.github/actions/setup-poetry-env
         with:
-          python-version: "3.11"
+          python-version: "3.13"
           poetry-options: --only=test
           working-directory: backend
 

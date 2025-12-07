@@ -1,5 +1,6 @@
 """Service fixtures."""
 
+import sys
 from functools import partial
 from pathlib import Path
 
@@ -20,6 +21,9 @@ def env_vars(project):
 
     Static because they are persisted in volumes, e.g. mysql-vol-1.
     """
+    v = sys.version_info
+    python_version = f"{v.major}.{v.minor}.{v.micro}"
+
     return {
         "COMPOSE_PROJECT_NAME": project,
         "DBDRIVER": "mysql",
@@ -30,6 +34,7 @@ def env_vars(project):
         "SKIP_FTS": "y",
         "REDISPASS": "test",
         "MAIL_HOSTNAME": "test.local",
+        "PYTHON_VERSION": python_version,
     }
 
 
