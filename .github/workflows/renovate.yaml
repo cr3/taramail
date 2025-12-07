@@ -12,7 +12,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Approve Renovate PR
-        uses: juliangruber/approve-pull-request-action@v1
+        uses: juliangruber/approve-pull-request-action@v2
         with:
           github-token: ${{ secrets.CODEOWNER_TOKEN }}
           number: ${{ github.event.pull_request.number }}
