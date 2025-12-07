@@ -301,7 +301,7 @@ services:
     restart: always
 
   ofelia:
-    image: mcuadros/ofelia:0.3.19
+    image: mcuadros/ofelia:v3.0.8
     depends_on:
       dovecot:
         condition: service_started
