@@ -9,7 +9,7 @@ from pytest_xdocker.retry import retry
 def test_mysql_service(env_vars, mysql_service):
     """The MySQL service should allow connection from DBUSER."""
     command = docker.exec_(mysql_service.name).with_command(
-        "mysql",
+        "mariadb",
         "--execute=SELECT VERSION();",
         f"--user={env_vars['DBUSER']}",
         f"--password={env_vars['DBPASS']}",
