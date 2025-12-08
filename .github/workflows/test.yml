@@ -25,5 +25,8 @@ jobs:
           python-version: "3.13"
           working-directory: backend
 
-      - name: Run check target
+      - name: List backend/
         run: ls -a backend
+
+      - name: Find backend/.venv
+        run: find backend/.venv
