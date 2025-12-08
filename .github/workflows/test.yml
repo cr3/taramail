@@ -26,7 +26,7 @@ jobs:
           working-directory: backend
 
       - name: List backend/
-        run: ls -a backend
+        run: ls -al backend
 
       - name: Find backend/.venv
         run: find backend/.venv
