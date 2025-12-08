@@ -163,7 +163,6 @@ services:
       - MAILDIR_GC_TIME=${MAILDIR_GC_TIME:-7200}
       - ACL_ANYONE=${ACL_ANYONE:-disallow}
       - SKIP_FTS=${SKIP_FTS:-n}
-      - MAILDIR_SUB=${MAILDIR_SUB:-}
       - MASTER=${MASTER:-y}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}

@@ -1,7 +1,7 @@
 Version 0.3.0
 -------------
 
-Released 2025-12-05
+Released 2025-12-08
 
 -   Add alias support.
 -   Add DKIM support.
@@ -13,6 +13,7 @@ Released 2025-12-05
 -   Move frontend to taram.
 -   Rename project to taramail.
 -   Replace Monit with Prometheus.
+-   Upgrade Dovecot to 2.4
 
 Version 0.2.0
 -------------
