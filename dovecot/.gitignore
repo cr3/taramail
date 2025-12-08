@@ -1,4 +1,5 @@
 conf/acl_anyone
+conf/conf.d/12-mysql.conf
 conf/dovecot-master.passwd
 conf/dovecot-master.userdb
 conf/extra.conf
