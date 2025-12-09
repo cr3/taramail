@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions/setup-poetry-env
         with:
           poetry-options: --only=check
-          python-version: "3.13"
+          python-version: "3.14"
           working-directory: backend
 
       - name: Run check target
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     steps:
       - name: Check out
@@ -74,7 +74,7 @@ jobs:
       - name: Set up Python environment
         uses: ./.github/actions/setup-poetry-env
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           poetry-options: --only=test
           working-directory: backend
 
