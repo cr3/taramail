@@ -413,7 +413,7 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
-    command: redis-server /redis.conf
+    command: redis-server /data/redis.conf
     entrypoint: /docker-entrypoint.sh
     restart: always
     sysctls:
