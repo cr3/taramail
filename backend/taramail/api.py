@@ -26,6 +26,11 @@ from jinja2 import (
     FileSystemLoader,
     select_autoescape,
 )
+from prometheus_client import (
+    REGISTRY,
+    generate_latest,
+)
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import EmailStr
 
 from taramail.alias import (
@@ -295,7 +300,7 @@ def delete_password_policy(manager: PasswordPolicyManagerDep) -> None:
     manager.reset_policy()
 
 
-@app.api_route("/rspamd/settings", methods=["GET", "HEAD"])
+@app.api_route("/rspamd/settings", methods=["GET", "HEAD"], include_in_schema=False)
 def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Response:
     return templates.TemplateResponse("rspamd_settings.j2", {
         "request": request,
@@ -308,7 +313,7 @@ def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Respon
     })
 
 
-@app.get("/rspamd/aliasexp")
+@app.get("/rspamd/aliasexp", include_in_schema=False)
 def get_rspamd_aliasexp(request: Request, aliasexp: RspamdAliasexpDep) -> Response:
     """Expand email alias to final mailbox recipient."""
     rcpt = request.headers.get("Rcpt")
@@ -316,7 +321,7 @@ def get_rspamd_aliasexp(request: Request, aliasexp: RspamdAliasexpDep) -> Respon
     return Response(content=content, media_type="text/plain")
 
 
-@app.get("/rspamd/bcc")
+@app.get("/rspamd/bcc", include_in_schema=False)
 def get_rspamd_bcc(request: Request, bcc: RspamdBccDep) -> Response:
     """Get BCC destination for recipient or sender."""
     rcpt = request.headers.get("Rcpt")
@@ -325,7 +330,7 @@ def get_rspamd_bcc(request: Request, bcc: RspamdBccDep) -> Response:
     return Response(content=content, media_type="text/plain")
 
 
-@app.get("/rspamd/error")
+@app.get("/rspamd/error", include_in_schema=False)
 def get_rspamd_error(request: Request, queue: QueueDep) -> None:
     queue.publish("F2B_CHANNEL", f"Rspamd UI: Invalid password by {request.client.host}")
     raise HTTPException(401, "Invalid password")
@@ -333,7 +338,7 @@ def get_rspamd_error(request: Request, queue: QueueDep) -> None:
 
 security = HTTPBasic(auto_error=False)
 
-@app.get("/sogo-auth")
+@app.get("/sogo-auth", include_in_schema=False)
 def get_sogo_auth(credentials: Annotated[HTTPBasicCredentials | None, Depends(security)], manager: AuthManagerDep, request: Request, response: Response) -> None:
     if credentials:
         ip = request.headers.get("X-Real-IP", request.client.host)
@@ -396,6 +401,17 @@ async def exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"error": "Unhandled exception"},
     )
+
+
+Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    excluded_handlers=["/metrics"],
+).instrument(app)
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    return Response(content=generate_latest(REGISTRY), media_type="text/plain")
 
 
 app.mount("/docs", StaticFiles(directory="./build/html", html=True, check_dir=False))

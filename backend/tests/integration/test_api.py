@@ -5,6 +5,8 @@ from hamcrest import (
     contains_string,
     equal_to,
     has_entries,
+    has_item,
+    has_properties,
     starts_with,
 )
 
@@ -131,3 +133,10 @@ def test_rspamd_aliasexp(api_session, unique):
 
     response = api_session.get("/rspamd/aliasexp", headers={"Rcpt": alias})
     assert_that(response.text, equal_to(mailbox))
+
+
+def test_api_metrics(api_exporter):
+    """The API should expose metrics."""
+    metrics = api_exporter.get_metrics()
+
+    assert_that(metrics, has_item(has_properties(name="http_requests")))

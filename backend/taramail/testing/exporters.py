@@ -28,7 +28,13 @@ class Exporter:
     def get_metrics(self, path="/metrics", params=None):
         session = HTTPSession(self.url)
         response = session.get(path, params=params)
-        return text_string_to_metric_families(response.text)
+        return list(text_string_to_metric_families(response.text))
+
+
+@pytest.fixture(scope="session")
+def api_exporter(api_service):
+    """API exporter fixture."""
+    return Exporter(api_service.ip, 80)
 
 
 @pytest.fixture(scope="session")
@@ -45,6 +51,12 @@ def custom_exporter(compose_server):
     server = compose_server("Application startup complete")
     with server.run("custom-exporter") as service:
         yield Exporter.from_service(service)
+
+
+@pytest.fixture(scope="session")
+def dockerapi_exporter(dockerapi_service):
+    """API exporter fixture."""
+    return Exporter(dockerapi_service.ip, 80)
 
 
 @pytest.fixture(scope="session")

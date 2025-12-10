@@ -2,6 +2,7 @@
 
 from hamcrest import (
     assert_that,
+    contains_string,
     equal_to,
     greater_than,
     has_entries,
@@ -292,3 +293,9 @@ def test_sogo_auth_invalid(api_app, unique):
     username, password = unique("email"), unique("password")
     response = api_app.get("/sogo-auth", auth=(username, password))
     assert response.status_code == 401
+
+
+def test_api_metrics_get(api_app):
+    """Getting metrics should return http requests total."""
+    response = api_app.get("/metrics")
+    assert_that(response.text, contains_string("http_requests"))

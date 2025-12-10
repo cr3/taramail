@@ -6,6 +6,10 @@ global:
     replica: '1'
 
 scrape_configs:
+  - job_name: 'api'
+    static_configs:
+      - targets: ['api:80']
+
   - job_name: 'blackbox-http'
     metrics_path: /probe
     params:
@@ -120,6 +124,10 @@ scrape_configs:
       rspamd_host: [rspamd]
     static_configs:
       - targets: ['custom-exporter:80']
+
+  - job_name: 'dockerapi'
+    static_configs:
+      - targets: ['dockerapi:80']
 
   - job_name: 'dovecot'
     static_configs:
