@@ -8,9 +8,14 @@ from attrs import define, field
 from fastapi import (
     FastAPI,
     Request,
+    Response,
 )
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRoute
+from prometheus_client import (
+    REGISTRY,
+    generate_latest,
+)
+from prometheus_fastapi_instrumentator import Instrumentator
 
 logger = logging.getLogger("uvicorn")
 
@@ -153,7 +158,12 @@ async def exception_handler(request: Request, exc: Exception):
     )
 
 
-# Simplify operation IDs to use route names.
-for route in app.routes:
-    if isinstance(route, APIRoute):
-        route.operation_id = route.name
+Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    excluded_handlers=["/metrics"],
+).instrument(app)
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(REGISTRY), media_type="text/plain")

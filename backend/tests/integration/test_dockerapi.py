@@ -7,6 +7,7 @@ from hamcrest import (
     has_entries,
     has_item,
     has_length,
+    has_properties,
 )
 from requests import HTTPError
 
@@ -52,3 +53,10 @@ def test_dockerapi_post_invalid_service_action(dockerapi_session):
     """Posting an invalid action should return a 400 status code."""
     with pytest.raises(HTTPError):
         dockerapi_session.post("/services/dockerapi/test")
+
+
+def test_dockerapi_metrics(dockerapi_exporter):
+    """The Docker API service should expose metrics."""
+    metrics = dockerapi_exporter.get_metrics()
+
+    assert_that(metrics, has_item(has_properties(name="http_requests")))
