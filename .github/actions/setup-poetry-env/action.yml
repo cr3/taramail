@@ -35,7 +35,7 @@ runs:
 
     - name: Load cached venv
       id: cached-poetry-dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ inputs.working-directory }}/.venv
         key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.poetry-options }}-${{ hashFiles('poetry.lock') }}
