@@ -56,6 +56,12 @@ RUN rm -rf /tmp/* /var/tmp/*
 
 EXPOSE 588
 
+HEALTHCHECK \
+  --start-period=10s \
+  --interval=10s \
+  --timeout=5s \
+  CMD ! /usr/lib/postfix/sbin/master -t
+
 COPY docker-entrypoint.sh /
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

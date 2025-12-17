@@ -1,7 +1,7 @@
-name: taramail
 
 x-build-args: &backend-build-args
   PYTHON_VERSION: ${PYTHON_VERSION:-3.13.10}
+name: taramail
 
 services:
   api:
@@ -37,7 +37,6 @@ services:
       start_period: 10s
       interval: 10s
       timeout: 5s
-      retries: 3
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
 
@@ -237,7 +236,6 @@ services:
       start_period: 10s
       interval: 10s
       timeout: 5s
-      retries: 3
     user: mysql
     stop_grace_period: 45s
 
@@ -375,7 +373,7 @@ services:
     build: postfix_exporter
     depends_on:
       postfix:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - postfix-vol-1:/var/spool/postfix:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
