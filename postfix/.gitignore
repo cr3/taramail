@@ -4,5 +4,3 @@ conf/extra.cf
 conf/sni.map
 conf/sni.map.db
 conf/sql
-conf/dns_blocklists.cf
-conf/dnsbl_reply.map
