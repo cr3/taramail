@@ -26,5 +26,8 @@
       "matchPackageNames": ["python"],
       "allowedVersions": "!/^3\\.14/"
     }
-  ]
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash"
 }
