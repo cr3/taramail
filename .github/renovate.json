@@ -1,8 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    ":automergeAll"
+    "config:recommended"
   ],
   "customManagers": [
     {
@@ -26,5 +25,10 @@
       "matchPackageNames": ["python"],
       "allowedVersions": "!/^3\\.14/"
     }
-  ]
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": false,
+  "recreateWhen": "always"
 }
