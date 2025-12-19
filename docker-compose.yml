@@ -385,7 +385,7 @@ services:
     restart: always
 
   prometheus:
-    image: prom/prometheus:v3.8.0
+    image: prom/prometheus:v3.8.1
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
