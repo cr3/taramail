@@ -1,9 +1,9 @@
-ARG DEBIAN_RELEASE=bookworm
+ARG DEBIAN_RELEASE=trixie
 FROM debian:${DEBIAN_RELEASE}-slim
 
 ARG DEBIAN_RELEASE
 ARG DEBIAN_FRONTEND=noninteractive
-ARG RSPAMD_VER=rspamd_3.13.2-1~8bf602278
+ARG RSPAMD_VER=rspamd_3.14.2-1~e6f401a
 ENV LC_ALL=C
 
 RUN apt-get update && apt-get install -y \

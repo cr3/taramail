@@ -45,13 +45,14 @@ class ComposeService:
 
 
 class ComposeServer(ProcessServer):
-    def __init__(self, pattern, project="test", env_file=None, compose_files=None, **kwargs):
+    def __init__(self, pattern, project="test", env_file=None, compose_files=None, timeout=180, **kwargs):
         """Initilize a compose server."""
         super().__init__(**kwargs)
         self.pattern = pattern
         self.project = project
         self.env_file = env_file
         self.compose_files = compose_files
+        self.timeout = timeout
 
     def __repr__(self):
         return f"{self.__class__.__name__}(pattern={self.pattern!r}, project={self.project!r})"
@@ -76,7 +77,7 @@ class ComposeServer(ProcessServer):
             .with_remove()
         )
 
-        return ProcessData(self.pattern, command, timeout=180)
+        return ProcessData(self.pattern, command, timeout=self.timeout)
 
     @contextmanager
     def run(self, name):

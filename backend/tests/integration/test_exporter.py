@@ -8,7 +8,7 @@ from pytest_xdocker.retry import retry
 
 
 def test_exporter_check_rspamd(custom_exporter, rspamd_service):
-    """The /check endpoint should chck Rspamd."""
+    """The /check endpoint should check Rspamd."""
     def get_metrics(custom_exporter, rspamd_host):
         return list(custom_exporter.get_metrics("/check", params={
             "rspamd_host": rspamd_host,
