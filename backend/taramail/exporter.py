@@ -123,7 +123,7 @@ def check_mysql_query(db: DBSession) -> None:
 
 
 @app.get("/check")
-def check(db: DbDep, rspamd_host: str = "rspamd") -> Response:
+def check(db: DbDep, rspamd_host: str = "taramail-rspamd") -> Response:
     """Prometheus check endpoint."""
     check_rspamd_scoring(rspamd_host)
     check_rspamd_milter(rspamd_host)

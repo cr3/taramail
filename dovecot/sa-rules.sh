@@ -24,7 +24,7 @@ fi
 sed -i -e 's/\([^\\]\)\$\([^\/]\)/\1\\$\2/g' /etc/rspamd/custom/sa-rules
 
 if [[ "$(cat /etc/rspamd/custom/sa-rules | md5sum | cut -d' ' -f1)" != "${HASH_SA_RULES}" ]]; then
-  curl --silent --insecure -XPOST --connect-timeout 15 --max-time 120 https://dockerapi/services/rspamd/restart
+  curl --silent --insecure -XPOST --connect-timeout 15 --max-time 120 https://taramail-dockerapi/services/rspamd/restart
 fi
 
 # Cleanup

@@ -7,7 +7,7 @@ while ! mariadb-admin status --ssl=false --socket=/var/run/mysqld/mysqld.sock -u
 done
 
 # Wait until port becomes free and send sig
-until ! nc -z sogo 20000;
+until ! nc -z taramail-sogo 20000;
 do
   killall -TERM sogod
   sleep 3

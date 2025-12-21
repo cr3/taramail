@@ -1,10 +1,10 @@
 #!/bin/sh
 
-until ping sogo -c1 > /dev/null; do
+until ping taramail-sogo -c1 > /dev/null; do
   echo "Waiting for SOGo..."
   sleep 1
 done
-until ping rspamd -c1 > /dev/null; do
+until ping taramail-rspamd -c1 > /dev/null; do
   echo "Waiting for Rspamd..."
   sleep 1
 done

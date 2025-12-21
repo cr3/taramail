@@ -1,5 +1,4 @@
-
-x-build-args: &backend-build-args
+x-build-args: &python-build-args
   PYTHON_VERSION: ${PYTHON_VERSION:-3.13.10}
 name: taramail
 
@@ -8,7 +7,7 @@ services:
     build:
       context: backend
       args:
-        <<: *backend-build-args
+        <<: *python-build-args
     depends_on:
       dockerapi:
         condition: service_started
@@ -29,6 +28,10 @@ services:
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
+    networks:
+      default:
+        aliases:
+          - taramail-api
     command: >
       sh -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.yaml"
     restart: always
@@ -46,6 +49,10 @@ services:
       - ./blackbox_exporter/config.yml.template:/etc/blackbox_exporter/config.yml.template:ro
     environment:
       - REDISPASS=${REDISPASS}
+    networks:
+      default:
+        aliases:
+          - taramail-blackbox-exporter
     restart: always
 
   certbot:
@@ -61,6 +68,10 @@ services:
       - certbot-www:/var/www/html
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+    networks:
+      default:
+        aliases:
+          - taramail-certbot
     command: >
       sh -c "trap exit TERM; while :; do
         certbot renew --webroot --webroot-path=/var/www/html --deploy-hook /deploy-hook.sh;
@@ -84,6 +95,10 @@ services:
       - ./clamd/clamd.conf:/etc/clamav/clamd.conf:ro,Z
       - ./clamd/freshclam.conf:/etc/clamav/freshclam.conf:ro,Z
       - clamd-vol-1:/var/lib/clamav
+    networks:
+      default:
+        aliases:
+          - taramail-clamd
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -92,7 +107,7 @@ services:
     build:
       context: backend
       args:
-        <<: *backend-build-args
+        <<: *python-build-args
     depends_on:
       mysql:
         condition: service_healthy
@@ -106,6 +121,10 @@ services:
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
       - REDISPASS=${REDISPASS}
+    networks:
+      default:
+        aliases:
+          - taramail-custom-exporter
     command: uvicorn --host=0.0.0.0 --port=80 taramail.exporter:app --log-config=/app/log-config.yaml
     restart: always
 
@@ -113,11 +132,15 @@ services:
     build:
       context: backend
       args:
-        <<: *backend-build-args
+        <<: *python-build-args
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taramail}
+    networks:
+      default:
+        aliases:
+          - taramail-dockerapi
     command: uvicorn --host=0.0.0.0 --port=80 taramail.dockerapi:app --log-config=/app/log-config.yaml
     restart: always
     dns:
@@ -166,7 +189,6 @@ services:
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
-      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-taramail}
       - FLATCURVE_EXPERIMENTAL=${FLATCURVE_EXPERIMENTAL:-n}
     ports:
       - '${DOVEADM_PORT:-127.0.0.1:19991}:12345'
@@ -178,6 +200,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.250
+        aliases:
+          - taramail-dovecot
     restart: always
     labels:
       ofelia.enabled: "true"
@@ -211,6 +235,10 @@ services:
 
   memcached:
     image: memcached:1.6.40-alpine
+    networks:
+      default:
+        aliases:
+          - taramail-memcached
     restart: always
 
   mysql:
@@ -230,6 +258,10 @@ services:
       - MYSQL_INITDB_SKIP_TZINFO=1
     ports:
       - '${SQL_PORT:-127.0.0.1:13306}:3306'
+    networks:
+      default:
+        aliases:
+          - taramail-mysql
     restart: always
     healthcheck:
       test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
@@ -244,6 +276,10 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - taramail-mysqld-exporter
     command:
       - '--mysqld.username=root:${DBROOT}'
       - '--mysqld.address=mysql:3306'
@@ -253,7 +289,7 @@ services:
     build:
       context: backend
       args:
-        <<: *backend-build-args
+        <<: *python-build-args
     volumes:
       - /lib/modules:/lib/modules:ro
     environment:
@@ -300,6 +336,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.240
+        aliases:
+          - taramail-nginx
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
@@ -309,8 +347,12 @@ services:
     depends_on:
       nginx:
         condition: service_started
+    networks:
+      default:
+        aliases:
+          - taramail-nginx-exporter
     command:
-      - '-nginx.scrape-uri=http://nginx:80/nginx_status'
+      - '-nginx.scrape-uri=http://taramail-nginx/nginx_status'
     restart: always
 
   ofelia:
@@ -363,6 +405,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.253
+        aliases:
+          - taramail-postfix
     restart: always
     cap_add:
       - NET_BIND_SERVICE
@@ -379,6 +423,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      default:
+        aliases:
+          - taramail-postfix-exporter
     command:
       - '--docker.enable'
       - '--docker.container.id=${COMPOSE_PROJECT_NAME:-taramail}-postfix-1'
@@ -389,6 +437,10 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
+    networks:
+      default:
+        aliases:
+          - taramail-prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -409,6 +461,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
+        aliases:
+          - taramail-redis
     command: redis-server /data/redis.conf
     entrypoint: /docker-entrypoint.sh
     restart: always
@@ -423,6 +477,10 @@ services:
     environment:
       - REDIS_ADDR=redis:6379
       - REDIS_PASSWORD=${REDISPASS}
+    networks:
+      default:
+        aliases:
+          - taramail-redis-exporter
     restart: always
 
   rspamd:
@@ -447,10 +505,14 @@ services:
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
+    networks:
+      default:
+        aliases:
+          - taramail-rspamd
     restart: always
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
-    hostname: rspamd
+    hostname: taramail-rspamd
     stop_grace_period: 30s
 
   sogo:
@@ -484,6 +546,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.248
+        aliases:
+          - taramail-sogo
     restart: always
     labels:
       ofelia.enabled: "true"
@@ -505,6 +569,8 @@ services:
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.254
+        aliases:
+          - taramail-unbound
     restart: always
 
 networks:

@@ -11,7 +11,7 @@ done
 if [[ ! -z ${REDIS_SLAVEOF_IP} ]]; then
   REDIS_CMDLINE="redis-cli -h ${REDIS_SLAVEOF_IP} -p ${REDIS_SLAVEOF_PORT} -a ${REDISPASS} --no-auth-warning"
 else
-  REDIS_CMDLINE="redis-cli -h redis -p 6379 -a ${REDISPASS} --no-auth-warning"
+  REDIS_CMDLINE="redis-cli -h taramail-redis -p 6379 -a ${REDISPASS} --no-auth-warning"
 fi
 
 until [[ $(${REDIS_CMDLINE} PING) == "PONG" ]]; do
@@ -221,7 +221,7 @@ function auth_password_verify(req, pass)
   -- }]], con:escape(req.protocol), con:escape(req.auth_user), con:escape(req.remote_ip))
   -- http.request {
   --   method = "POST",
-  --   url = "http://nginx:8081/sasl_log.php",
+  --   url = "http://taramail-nginx:8081/sasl_log.php",
   --   source = ltn12.source.string(reqbody),
   --   headers = {
   --     ["content-type"] = "application/json",

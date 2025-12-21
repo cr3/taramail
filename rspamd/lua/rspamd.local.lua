@@ -316,7 +316,7 @@ rspamd_config:register_symbol({
             else
               rspamd_http.request({
                 task=task,
-                url='http://api/rspamd/aliasexp',
+                url='http://taramail-api/rspamd/aliasexp',
                 body='',
                 callback=http_callback,
                 headers={Rcpt=rcpt['addr']},
@@ -420,7 +420,7 @@ rspamd_config:register_symbol({
         rspamd_logger.infox(rspamd_config, "checking bcc for rcpt address %s", e)
         rspamd_http.request({
           task=task,
-          url='http://api/rspamd/bcc',
+          url='http://taramail-api/rspamd/bcc',
           body='',
           callback=rcpt_callback,
           headers={Rcpt=e}
@@ -433,7 +433,7 @@ rspamd_config:register_symbol({
         rspamd_logger.infox(rspamd_config, "checking bcc for from address %s", e)
         rspamd_http.request({
           task=task,
-          url='http://api/rspamd/bcc',
+          url='http://taramail-api/rspamd/bcc',
           body='',
           callback=from_callback,
           headers={From=e}

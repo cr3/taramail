@@ -56,7 +56,7 @@ query = SELECT IF(EXISTS(SELECT address, domain FROM alias
               AND relay_all_recipients = 1
               AND relay_unknown_only = 1)
 
-      ), 'lmtp:inet:dovecot:24', NULL) AS 'transport'
+      ), 'lmtp:inet:taramail-dovecot:24', NULL) AS 'transport'
 EOF
 
 cat <<EOF > /opt/postfix/conf/sql/mysql_relay_recipient_maps.cf

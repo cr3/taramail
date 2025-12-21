@@ -30,7 +30,7 @@ try:
     while True:
         try:
             r = redis.StrictRedis(
-                host="redis",
+                host="taramail-redis",
                 decode_responses=True,
                 port=6379,
                 db=0,
