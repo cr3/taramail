@@ -203,9 +203,13 @@ class NetfilterTables:
             return None
 
         kernel_ruleset = self.list_chain(table="filter", name=chain_name)
-        for position, obj in enumerate(kernel_ruleset["nftables"]):
-            if "rule" in obj and obj["rule"].get("comment") == self.comment:
+        position = 0
+        for obj in kernel_ruleset["nftables"]:
+            if "rule" not in obj:
+                continue
+            if obj["rule"].get("comment") == self.comment:
                 return position
+            position += 1
 
         return -1
 
