@@ -256,8 +256,6 @@ services:
       - MYSQL_USER=${DBUSER}
       - MYSQL_PASSWORD=${DBPASS}
       - MYSQL_INITDB_SKIP_TZINFO=1
-    ports:
-      - '${SQL_PORT:-127.0.0.1:13306}:3306'
     networks:
       default:
         aliases:
@@ -456,8 +454,6 @@ services:
       - redis-vol-1:/data/
     environment:
       - REDISPASS=${REDISPASS}
-    ports:
-      - '${REDIS_PORT:-127.0.0.1:7654}:6379'
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
