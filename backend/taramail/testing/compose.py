@@ -75,6 +75,7 @@ class ComposeServer(ProcessServer):
             .with_name(full_name)
             .with_build()
             .with_remove()
+            .with_optionals("--use-aliases")
         )
 
         return ProcessData(self.pattern, command, timeout=self.timeout)
