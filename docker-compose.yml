@@ -87,7 +87,7 @@ services:
       retries: 15
 
   clamd:
-    image: clamav/clamav:1.5.1-23
+    image: clamav/clamav:1.5.1-24
     depends_on:
       unbound:
         condition: service_healthy
