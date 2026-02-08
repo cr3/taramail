@@ -165,7 +165,7 @@ class FilterconfModel(TimestampMixin, SQLModel):
     value: Mapped[str] = mapped_column(String(100), server_default="")
 
     __tablename__ = "filterconf"
-    __table_args__ = (Index("filterconf_object_key", object),)
+    __table_args__ = (Index("filterconf_object_key", object),)  # noqa: A003
 
 
 class ImapsyncModel(TimestampMixin, SQLModel):
