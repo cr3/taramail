@@ -41,28 +41,27 @@ dependencies = [
     "yarl (>=1.18.3,<2.0.0)",
 ]
 
-[tool.poetry.group.test.dependencies]
-coverage = "^7.2.3"
-httpx = "^0.28.1"
-pyhamcrest = "^2.1.0"
-pytest = "^9.0.0"
-pytest-unique = "^0.1.7"
-pytest-xdocker = "^0.2.7"
-redis = "^7.0.0"
-responses = "^0.26.0"
+[project.optional-dependencies]
 
-[tool.poetry.group.check]
-optional = true
+test = [
+  "coverage>=7.2.3,<8.0.0",
+  "httpx>=0.28.1,<1.0.0",
+  "pyhamcrest>=2.1.0,<3.0.0",
+  "pytest>=9.0.0,<10.0.0",
+  "pytest-unique>=0.1.7,<1.0.0",
+  "pytest-xdocker>=0.2.7,<1.0.0",
+  "redis>=7.0.0,<8.0.0",
+  "responses>=0.26.0,<1.0.0",
+]
 
-[tool.poetry.group.check.dependencies]
-ruff = "^0.15.0"
+check = [
+  "ruff>=0.15.0,<1.0.0",
+]
 
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^9.0.0"
-sphinxcontrib-log-cabinet = "^1.0.1"
+docs = [
+  "sphinx>=9.0.0,<10.0.0",
+  "sphinxcontrib-log-cabinet>=1.0.1,<2.0.0",
+]
 
 [project.entry-points."pytest11"]
 taramail = "taramail.testing.fixtures"
@@ -93,8 +92,8 @@ netfilter = "taramail.netfilter:main"
 taramail = "taramail.cli:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 target-version = "py311"
