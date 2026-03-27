@@ -186,16 +186,6 @@ query = SELECT CONCAT_WS(':', username, password) AS auth_data FROM relayhosts
   WHERE id IN (
     SELECT COALESCE(
       (SELECT id FROM relayhosts
-      LEFT OUTER JOIN domain ON domain.relayhost = relayhosts.id
-      WHERE relayhosts.active = 1
-        AND (domain.domain = '%d'
-          OR domain.domain IN (
-            SELECT target_domain FROM alias_domain
-            WHERE alias_domain = '%d'
-          )
-        )
-      ),
-      (SELECT id FROM relayhosts
       LEFT OUTER JOIN user_attributes ON user_attributes.relayhost = relayhosts.id
       WHERE relayhosts.active = 1
         AND (
@@ -205,6 +195,16 @@ query = SELECT CONCAT_WS(':', username, password) AS auth_data FROM relayhosts
                 WHERE alias.active = 1
                   AND alias.address = '%s'
                   AND alias.address NOT LIKE '@%%'
+          )
+        )
+      ),
+      (SELECT id FROM relayhosts
+      LEFT OUTER JOIN domain ON domain.relayhost = relayhosts.id
+      WHERE relayhosts.active = 1
+        AND (domain.domain = '%d'
+          OR domain.domain IN (
+            SELECT target_domain FROM alias_domain
+            WHERE alias_domain = '%d'
           )
         )
       )
