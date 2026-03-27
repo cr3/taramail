@@ -8,6 +8,7 @@ Released 2025-12-08
 -   Add dynamic Rspamd settings.
 -   Add ofelia service.
 -   Add password policy.
+-   Add relayhost support.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
 -   Move frontend to taram.

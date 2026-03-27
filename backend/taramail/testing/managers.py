@@ -10,6 +10,7 @@ from taramail.dkim import DKIMManager
 from taramail.domain import DomainManager
 from taramail.mailbox import MailboxManager
 from taramail.password import PasswordPolicyManager
+from taramail.relayhost import RelayHostManager
 from taramail.sogo import Sogo
 
 
@@ -52,6 +53,12 @@ def password_policy_manager(redis_store):
         yield manager
     finally:
         manager.reset_policy()
+
+
+@pytest.fixture
+def relayhost_manager(db_session):
+    """Relay host manager fixture."""
+    return RelayHostManager(db_session)
 
 
 @pytest.fixture

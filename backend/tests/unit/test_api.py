@@ -299,3 +299,48 @@ def test_api_metrics_get(api_app):
     """Getting metrics should return http requests total."""
     response = api_app.get("/metrics")
     assert_that(response.text, contains_string("http_requests"))
+
+
+def test_api_relayhosts_get(api_app, unique):
+    """Getting relayhosts should return the list of relayhost ids."""
+    hostname = unique("text")
+    response = api_app.post("/api/relayhosts", json={"hostname": hostname})
+    relayhost_id = response.json()["id"]
+    response = api_app.get("/api/relayhosts")
+    assert_that(response.json(), has_item(relayhost_id))
+
+
+def test_api_relayhosts_post(api_app, unique):
+    """Posting a relayhost should create it in the api."""
+    hostname = unique("text")
+    response = api_app.post("/api/relayhosts", json={
+        "hostname": hostname,
+        "username": "user",
+        "password": "pass",
+    })
+    assert response.status_code == 200
+    relayhost_id = response.json()["id"]
+    response = api_app.get(f"/api/relayhosts/{relayhost_id}")
+    assert response.status_code == 200
+    assert_that(response.json(), has_entries(hostname=hostname, username="user"))
+
+
+def test_api_relayhosts_put(api_app, unique):
+    """Putting a relayhost should update it from the attributes."""
+    hostname = unique("text")
+    response = api_app.post("/api/relayhosts", json={"hostname": hostname})
+    relayhost_id = response.json()["id"]
+    new_hostname = unique("text")
+    api_app.put(f"/api/relayhosts/{relayhost_id}", json={"hostname": new_hostname})
+    response = api_app.get(f"/api/relayhosts/{relayhost_id}")
+    assert_that(response.json(), has_entries(hostname=new_hostname))
+
+
+def test_api_relayhosts_delete(api_app, unique):
+    """Deleting a relayhost should delete it from the list."""
+    hostname = unique("text")
+    response = api_app.post("/api/relayhosts", json={"hostname": hostname})
+    relayhost_id = response.json()["id"]
+    api_app.delete(f"/api/relayhosts/{relayhost_id}")
+    response = api_app.get(f"/api/relayhosts/{relayhost_id}")
+    assert response.status_code == 404

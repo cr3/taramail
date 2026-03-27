@@ -86,6 +86,15 @@ from taramail.password import (
     PasswordPolicyUpdate,
     PasswordValidationError,
 )
+from taramail.relayhost import (
+    RelayHostAlreadyExistsError,
+    RelayHostCreate,
+    RelayHostDetails,
+    RelayHostManager,
+    RelayHostNotFoundError,
+    RelayHostUpdate,
+    RelayHostValidationError,
+)
 from taramail.rspamd import (
     RspamdAliasexp,
     RspamdBcc,
@@ -143,6 +152,11 @@ def get_password_policy_manager(store: StoreDep):
     return PasswordPolicyManager(store)
 
 PasswordPolicyManagerDep = Annotated[PasswordPolicyManager, Depends(get_password_policy_manager)]
+
+def get_relayhost_manager(db: DbDep):
+    return RelayHostManager(db)
+
+RelayHostManagerDep = Annotated[RelayHostManager, Depends(get_relayhost_manager)]
 
 def get_rspamd_settings(db: DbDep):
     return RspamdSettings(db)
@@ -256,6 +270,37 @@ def put_alias(address: AliasStr, update: AliasUpdate, manager: AliasManagerDep) 
 def delete_alias(address: AliasStr, manager: AliasManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_alias(address)
+
+
+@app.get("/api/relayhosts")
+def get_relayhosts(manager: RelayHostManagerDep) -> list[int]:
+    return [r.id for r in manager.get_relayhosts()]
+
+
+@app.get("/api/relayhosts/{relayhost_id}")
+def get_relayhost(relayhost_id: int, manager: RelayHostManagerDep) -> RelayHostDetails:
+    return manager.get_relayhost_details(relayhost_id)
+
+
+@app.post("/api/relayhosts")
+def post_relayhost(create: RelayHostCreate, manager: RelayHostManagerDep) -> RelayHostDetails:
+    with db_transaction(manager.db):
+        relayhost = manager.create_relayhost(create)
+    return manager.get_relayhost_details(relayhost.id)
+
+
+@app.put("/api/relayhosts/{relayhost_id}")
+def put_relayhost(relayhost_id: int, update: RelayHostUpdate, manager: RelayHostManagerDep) -> RelayHostDetails:
+    with db_transaction(manager.db):
+        manager.update_relayhost(relayhost_id, update)
+
+    return manager.get_relayhost_details(relayhost_id)
+
+
+@app.delete("/api/relayhosts/{relayhost_id}")
+def delete_relayhost(relayhost_id: int, manager: RelayHostManagerDep) -> None:
+    with db_transaction(manager.db):
+        manager.delete_relayhost(relayhost_id)
 
 
 @app.get("/api/dkim")
@@ -379,6 +424,9 @@ error_handlers = {
     MailboxNotFoundError: 404,
     MailboxValidationError: 400,
     PasswordValidationError: 400,
+    RelayHostAlreadyExistsError: 409,
+    RelayHostNotFoundError: 404,
+    RelayHostValidationError: 400,
 }
 
 def create_error_handler(exc_class, status_code):
