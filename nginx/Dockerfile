@@ -1,4 +1,4 @@
-FROM nginx:alpine
+FROM alpine:3.23
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
