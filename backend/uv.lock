@@ -1364,20 +1364,20 @@ sdist = { url = "https://files.pythonhosted.org/packages/d1/15/082fd0428aab33d2b
 
 [[package]]
 name = "pytest-unique"
-version = "0.1.7"
+version = "0.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/53/23/0ec8691f6ddbdbd07181dd5a504a2c4ac94fa50364344780c716b19f23f9/pytest_unique-0.1.7.tar.gz", hash = "sha256:7e48682ca5635e356454af92617994cd037717dc4ab7d8fec2d7695902e3a65f", size = 6701, upload-time = "2025-12-08T17:01:28.767Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/fc/be0df3f8a03659cdfa8978a0289d447fef8424966a279fe3151f56c08af4/pytest_unique-0.1.8.tar.gz", hash = "sha256:21111b237edd0cb49667f0e8cc09ca3bb3d4603420bf440d5dbd9570ae945e99", size = 60735, upload-time = "2026-03-27T14:20:28.725Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/b5/8a9bb1e35ece7bda52826332df19b9f1926597ba83873c4e907a04ca7bdb/pytest_unique-0.1.7-py3-none-any.whl", hash = "sha256:b34eceb33590e14ad8db69b34c8534417f4bdf2c09845fc0e85ca720a7f2095c", size = 8195, upload-time = "2025-12-08T17:01:27.601Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/9e/4722dd00f1fc2d3d497cbf629f5158d1988d0e5230a8dd8b7cfd49a44ed5/pytest_unique-0.1.8-py3-none-any.whl", hash = "sha256:20edb991b5b251e47b25a73a72a0ad5a220bff7dafd89fbe3c71eccfdd8737d1", size = 8322, upload-time = "2026-03-27T14:20:27.769Z" },
 ]
 
 [[package]]
 name = "pytest-xdocker"
-version = "0.2.7"
+version = "0.2.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1388,9 +1388,9 @@ dependencies = [
     { name = "pytest-cache" },
     { name = "pytest-xprocess" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/e1/c8bcbf70119837a7d92d5592fcf8dcc8cbc13a13387e8ca7d5c25e8e34fe/pytest_xdocker-0.2.7.tar.gz", hash = "sha256:01dcde4420296ee0269fa6da3366a3fd7b15c708e264122b6b103b3bcfaba204", size = 16756, upload-time = "2025-12-08T19:10:50.571Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/31/e55dea25c794c225bf17c0f787c60e6ecb06501f1d69c485afa8ebd5c897/pytest_xdocker-0.2.8.tar.gz", hash = "sha256:625ca2b673ea3f3fb4a8799de7b352fd28614f1751a2bd488198ff43e8386f44", size = 116533, upload-time = "2026-03-27T14:56:16.518Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/d4/40cc9a1a967f2f20e9ada4fb6c368d0beddf6ce385b422c1313b24b56e5d/pytest_xdocker-0.2.7-py3-none-any.whl", hash = "sha256:9e235535e8207183f0e2f5b95776e31db6833658eb254b6601b6ab3c6d64e0db", size = 20123, upload-time = "2025-12-08T19:10:49.628Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/3c/67647cdff85b2a4c26502c2fa7063e0620aeda9f3530d43166816497e67c/pytest_xdocker-0.2.8-py3-none-any.whl", hash = "sha256:d7fcb352470aaa5c8d29f38ee9f8a338bb302329a5ed33edf317ee6c950fe017", size = 20226, upload-time = "2026-03-27T14:56:15.608Z" },
 ]
 
 [[package]]
@@ -1782,8 +1782,8 @@ requires-dist = [
     { name = "pyhamcrest", marker = "extra == 'test'", specifier = ">=2.1.0,<3.0.0" },
     { name = "pylibmc", specifier = ">=1.6.3,<2.0.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.0,<10.0.0" },
-    { name = "pytest-unique", marker = "extra == 'test'", specifier = ">=0.1.7,<1.0.0" },
-    { name = "pytest-xdocker", marker = "extra == 'test'", specifier = ">=0.2.7,<1.0.0" },
+    { name = "pytest-unique", marker = "extra == 'test'", specifier = ">=0.1.8,<1.0.0" },
+    { name = "pytest-xdocker", marker = "extra == 'test'", specifier = ">=0.2.8,<1.0.0" },
     { name = "redis", specifier = ">=7.4.0,<7.5.0" },
     { name = "redis", marker = "extra == 'test'", specifier = ">=7.0.0,<8.0.0" },
     { name = "requests", specifier = ">=2.32.3,<3.0.0" },
