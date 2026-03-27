@@ -82,6 +82,7 @@ class DomainCreate(BaseModel):
 
 
 class DomainDetails(BaseModel):
+
     max_new_mailbox_quota: int
     def_new_mailbox_quota: int
     quota_used_in_domain: int
@@ -114,6 +115,7 @@ class DomainUpdate(BaseModel):
     defquota: int | None = None
     maxquota: int | None = None
     quota: int | None = None
+    relayhost: int | None = None
     active: bool | None = None
     gal: bool | None = None
     backupmx: bool | None = None
