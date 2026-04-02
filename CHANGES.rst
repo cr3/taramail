@@ -10,6 +10,7 @@ Released 2026-04-02
 -   Add password policy.
 -   Add relayhost support.
 -   Add API for rspamd custom maps.
+-   Add API for forwarding hosts.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
 -   Move frontend to taram.

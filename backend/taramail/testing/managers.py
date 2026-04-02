@@ -8,10 +8,12 @@ from taramail.alias import AliasManager
 from taramail.auth import AuthManager
 from taramail.dkim import DKIMManager
 from taramail.domain import DomainManager
+from taramail.forwarding_host import ForwardingHostManager
 from taramail.mailbox import MailboxManager
 from taramail.password import PasswordPolicyManager
 from taramail.relayhost import RelayHostManager
 from taramail.sogo import Sogo
+from taramail.spf import SPFResolver
 
 
 @pytest.fixture
@@ -37,6 +39,12 @@ def domain_manager(db_session, redis_store):
     """Domain manager fixture."""
     dockerapi = Mock()
     return DomainManager(db_session, redis_store, dockerapi)
+
+
+@pytest.fixture
+def forwarding_host_manager(redis_store, fake_resolver):
+    """Forwarding host manager fixture."""
+    return ForwardingHostManager(redis_store, SPFResolver(fake_resolver))
 
 
 @pytest.fixture

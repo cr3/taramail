@@ -54,6 +54,14 @@ from taramail.deps import (
     QueueDep,
     StoreDep,
 )
+from taramail.forwarding_host import (
+    ForwardingHostCreate,
+    ForwardingHostDetails,
+    ForwardingHostManager,
+    ForwardingHostNotFoundError,
+    ForwardingHostUpdate,
+    ForwardingHostValidationError,
+)
 from taramail.dkim import (
     DKIMAlreadyExistsError,
     DKIMCreate,
@@ -110,6 +118,10 @@ from taramail.schemas import (
     DomainStr,
 )
 from taramail.sogo import Sogo
+from taramail.spf import (
+    DNSResolver,
+    SPFResolver,
+)
 
 logger = logging.getLogger("uvicorn")
 app = FastAPI(
@@ -147,6 +159,11 @@ def get_domain_manager(db: DbDep, store: StoreDep):
     return DomainManager(db, store)
 
 DomainManagerDep = Annotated[DomainManager, Depends(get_domain_manager)]
+
+def get_forwarding_host_manager(store: StoreDep):
+    return ForwardingHostManager(store, SPFResolver(DNSResolver()))
+
+ForwardingHostManagerDep = Annotated[ForwardingHostManager, Depends(get_forwarding_host_manager)]
 
 def get_mailbox_manager(db: DbDep, password_policy_manager: "PasswordPolicyManagerDep", store: StoreDep, sogo: "SogoDep"):
     return MailboxManager(db, store, password_policy_manager, sogo)
@@ -280,6 +297,31 @@ def put_alias(address: AliasStr, update: AliasUpdate, manager: AliasManagerDep) 
 def delete_alias(address: AliasStr, manager: AliasManagerDep) -> None:
     with db_transaction(manager.db):
         manager.delete_alias(address)
+
+
+@app.get("/api/forwardinghosts")
+def get_forwarding_hosts(manager: ForwardingHostManagerDep) -> list[ForwardingHostDetails]:
+    return manager.get_forwarding_hosts()
+
+
+@app.get("/api/forwardinghosts/{host:path}")
+def get_forwarding_host(host: str, manager: ForwardingHostManagerDep) -> ForwardingHostDetails:
+    return manager.get_forwarding_host_details(host)
+
+
+@app.post("/api/forwardinghosts")
+def post_forwarding_host(create: ForwardingHostCreate, manager: ForwardingHostManagerDep) -> list[str]:
+    return manager.add_forwarding_host(create)
+
+
+@app.put("/api/forwardinghosts/{host:path}")
+def put_forwarding_host(host: str, update: ForwardingHostUpdate, manager: ForwardingHostManagerDep) -> None:
+    manager.update_forwarding_host(host, update)
+
+
+@app.delete("/api/forwardinghosts/{host:path}")
+def delete_forwarding_host(host: str, manager: ForwardingHostManagerDep) -> None:
+    manager.delete_forwarding_host(host)
 
 
 @app.get("/api/relayhosts")
@@ -445,6 +487,8 @@ error_handlers = {
     DomainAlreadyExistsError: 409,
     DomainNotFoundError: 404,
     DomainValidationError: 400,
+    ForwardingHostNotFoundError: 404,
+    ForwardingHostValidationError: 400,
     MailboxAlreadyExistsError: 409,
     MailboxNotFoundError: 404,
     MailboxValidationError: 400,

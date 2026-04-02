@@ -2,8 +2,14 @@
 
 import pytest
 
+from taramail.spf import FakeResolver
 from taramail.store import MemoryStore
 
 redis_queue = pytest.fixture(lambda memory_queue: memory_queue)
 redis_store = pytest.fixture(lambda: MemoryStore())
 memcached_store = pytest.fixture(lambda: MemoryStore())
+
+
+@pytest.fixture
+def fake_resolver():
+    return FakeResolver()
