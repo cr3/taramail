@@ -4,12 +4,14 @@ import re
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass
+from pathlib import Path
 
 from attrs import (
     define,
     field,
 )
 from pydantic import (
+    BaseModel,
     EmailStr,
     validate_call,
 )
@@ -42,6 +44,47 @@ from taramail.schemas import (
     DomainStr,
 )
 from taramail.store import Store
+
+RSPAMD_MAPS = {
+    "global_mime_from_blacklist",
+    "global_mime_from_whitelist",
+    "global_smtp_from_blacklist",
+    "global_smtp_from_whitelist",
+    "global_rcpt_blacklist",
+    "global_rcpt_whitelist",
+    "fishy_tlds",
+    "bad_words",
+    "bad_words_de",
+    "bad_languages",
+    "bulk_header",
+    "bad_header",
+    "monitoring_nolog",
+}
+
+
+class RspamdMapError(Exception):
+    """Base exception for rspamd map errors."""
+
+
+class RspamdMapNotFoundError(RspamdMapError):
+    """Raised when a rspamd map is not found."""
+
+
+class RspamdMapValidationError(RspamdMapError):
+    """Raised when a rspamd map name is invalid."""
+
+
+class RspamdMapDetails(BaseModel):
+    """Details for a rspamd map."""
+
+    name: str
+    content: str
+
+
+class RspamdMapUpdate(BaseModel):
+    """Update body for a rspamd map."""
+
+    content: str
 
 
 def escape_slash(s):
@@ -373,3 +416,44 @@ class RspamdBcc:
                     return bcc_dest
 
         return ""
+
+
+@define(frozen=True)
+class RspamdMaps:
+    """Manager for rspamd custom map files."""
+
+    maps_dir: Path
+
+    def get_maps(self) -> list[str]:
+        """Get sorted list of available map names."""
+        return sorted(RSPAMD_MAPS)
+
+    def get_map_details(self, map_name: str) -> RspamdMapDetails:
+        """Get the content of a specific map file."""
+        self._validate_map_name(map_name)
+        map_path = self.maps_dir / f"{map_name}.map"
+        if not map_path.is_file():
+            raise RspamdMapNotFoundError(f"Map file not found: {map_name}")
+
+        return RspamdMapDetails(
+            name=map_name,
+            content=map_path.read_text().strip(),
+        )
+
+    def update_map(self, map_name: str, update: RspamdMapUpdate) -> RspamdMapDetails:
+        """Update the content of a specific map file."""
+        self._validate_map_name(map_name)
+        map_path = self.maps_dir / f"{map_name}.map"
+        if not map_path.is_file():
+            raise RspamdMapNotFoundError(f"Map file not found: {map_name}")
+
+        map_path.write_text(update.content.strip() + "\n")
+        return RspamdMapDetails(
+            name=map_name,
+            content=update.content.strip(),
+        )
+
+    def _validate_map_name(self, map_name: str) -> None:
+        """Validate that the map name is in the allowed set."""
+        if map_name not in RSPAMD_MAPS:
+            raise RspamdMapValidationError(f"Invalid map name: {map_name}")

@@ -1,7 +1,7 @@
 Version 0.3.0
 -------------
 
-Released 2025-12-08
+Released 2026-04-02
 
 -   Add alias support.
 -   Add DKIM support.
@@ -9,6 +9,7 @@ Released 2025-12-08
 -   Add ofelia service.
 -   Add password policy.
 -   Add relayhost support.
+-   Add API for rspamd custom maps.
 -   Move DynDNS to taramux.
 -   Move IPv6 to taramux.
 -   Move frontend to taram.

@@ -98,6 +98,11 @@ from taramail.relayhost import (
 from taramail.rspamd import (
     RspamdAliasexp,
     RspamdBcc,
+    RspamdMapDetails,
+    RspamdMapNotFoundError,
+    RspamdMapUpdate,
+    RspamdMapValidationError,
+    RspamdMaps,
     RspamdSettings,
 )
 from taramail.schemas import (
@@ -172,6 +177,11 @@ def get_rspamd_bcc(db: DbDep):
     return RspamdBcc(db)
 
 RspamdBccDep = Annotated[RspamdBcc, Depends(get_rspamd_bcc)]
+
+def get_rspamd_maps():
+    return RspamdMaps(Path("/etc/rspamd/custom"))
+
+RspamdMapsDep = Annotated[RspamdMaps, Depends(get_rspamd_maps)]
 
 def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
@@ -345,6 +355,21 @@ def delete_password_policy(manager: PasswordPolicyManagerDep) -> None:
     manager.reset_policy()
 
 
+@app.get("/api/rspamd/maps")
+def get_rspamd_maps(maps: RspamdMapsDep) -> list[str]:
+    return maps.get_maps()
+
+
+@app.get("/api/rspamd/maps/{map_name}")
+def get_rspamd_map(map_name: str, maps: RspamdMapsDep) -> RspamdMapDetails:
+    return maps.get_map_details(map_name)
+
+
+@app.put("/api/rspamd/maps/{map_name}")
+def put_rspamd_map(map_name: str, update: RspamdMapUpdate, maps: RspamdMapsDep) -> RspamdMapDetails:
+    return maps.update_map(map_name, update)
+
+
 @app.api_route("/rspamd/settings", methods=["GET", "HEAD"], include_in_schema=False)
 def get_rspamd_settings(request: Request, settings: RspamdSettingsDep) -> Response:
     return templates.TemplateResponse("rspamd_settings.j2", {
@@ -427,6 +452,8 @@ error_handlers = {
     RelayHostAlreadyExistsError: 409,
     RelayHostNotFoundError: 404,
     RelayHostValidationError: 400,
+    RspamdMapNotFoundError: 404,
+    RspamdMapValidationError: 400,
 }
 
 def create_error_handler(exc_class, status_code):

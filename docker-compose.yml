@@ -18,6 +18,7 @@ services:
       redis:
         condition: service_started
     volumes:
+      - ./rspamd/custom/:/etc/rspamd/custom:z
       - backend-docs:/app/docs/html:ro
       - mysql-socket-vol-1:/run/mysqld/
     environment:

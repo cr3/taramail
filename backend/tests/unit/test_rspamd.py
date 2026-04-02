@@ -1,6 +1,7 @@
 """Unit tests for the rspamd module."""
 
 import re
+from pathlib import Path
 
 import pytest
 from hamcrest import (
@@ -9,6 +10,7 @@ from hamcrest import (
     contains_exactly,
     contains_inanyorder,
     contains_string,
+    has_items,
     has_properties,
 )
 
@@ -26,8 +28,13 @@ from taramail.models import (
     SogoQuickContactModel,
 )
 from taramail.rspamd import (
+    RSPAMD_MAPS,
     RspamdAliasexp,
     RspamdBcc,
+    RspamdMapNotFoundError,
+    RspamdMapUpdate,
+    RspamdMapValidationError,
+    RspamdMaps,
     RspamdSettings,
 )
 
@@ -165,3 +172,87 @@ def test_rspamd_settings_get_domain_rcpts_standard_aliases(db_model, db_session,
         contains_string(domain),
         address,
     ))
+
+
+@pytest.fixture
+def maps_dir(tmp_path):
+    """Create a temporary maps directory with all map files."""
+    for map_name in RSPAMD_MAPS:
+        (tmp_path / f"{map_name}.map").write_text("")
+    return tmp_path
+
+
+def test_rspamd_maps_get_maps(maps_dir):
+    """Getting maps should return a sorted list of all valid map names."""
+    result = RspamdMaps(maps_dir).get_maps()
+    assert result == sorted(RSPAMD_MAPS)
+
+
+def test_rspamd_maps_get_maps_includes_known_maps(maps_dir):
+    """Getting maps should include the well-known whitelist and blacklist maps."""
+    result = RspamdMaps(maps_dir).get_maps()
+    assert_that(result, has_items(
+        "global_smtp_from_whitelist",
+        "global_smtp_from_blacklist",
+        "global_mime_from_whitelist",
+        "global_mime_from_blacklist",
+        "global_rcpt_whitelist",
+        "global_rcpt_blacklist",
+    ))
+
+
+def test_rspamd_maps_get_map_details(maps_dir):
+    """Getting map details should return the name and content of the map."""
+    (maps_dir / "bad_words.map").write_text("spam\nphishing\n")
+    result = RspamdMaps(maps_dir).get_map_details("bad_words")
+    assert result.name == "bad_words"
+    assert result.content == "spam\nphishing"
+
+
+def test_rspamd_maps_get_map_details_empty(maps_dir):
+    """Getting map details for an empty map should return empty content."""
+    result = RspamdMaps(maps_dir).get_map_details("bad_words")
+    assert result.name == "bad_words"
+    assert result.content == ""
+
+
+def test_rspamd_maps_get_map_details_invalid_name(maps_dir):
+    """Getting map details with an invalid name should raise a validation error."""
+    with pytest.raises(RspamdMapValidationError):
+        RspamdMaps(maps_dir).get_map_details("not_a_valid_map")
+
+
+def test_rspamd_maps_get_map_details_missing_file(tmp_path):
+    """Getting map details when the file is missing should raise a not found error."""
+    with pytest.raises(RspamdMapNotFoundError):
+        RspamdMaps(tmp_path).get_map_details("bad_words")
+
+
+def test_rspamd_maps_update_map(maps_dir):
+    """Updating a map should write the content to the file."""
+    update = RspamdMapUpdate(content="test@example.com\n*.bad.com")
+    result = RspamdMaps(maps_dir).update_map("global_smtp_from_blacklist", update)
+    assert result.name == "global_smtp_from_blacklist"
+    assert result.content == "test@example.com\n*.bad.com"
+    assert (maps_dir / "global_smtp_from_blacklist.map").read_text() == "test@example.com\n*.bad.com\n"
+
+
+def test_rspamd_maps_update_map_strips_whitespace(maps_dir):
+    """Updating a map should strip leading and trailing whitespace from content."""
+    update = RspamdMapUpdate(content="  test@example.com  \n")
+    result = RspamdMaps(maps_dir).update_map("global_smtp_from_whitelist", update)
+    assert result.content == "test@example.com"
+
+
+def test_rspamd_maps_update_map_invalid_name(maps_dir):
+    """Updating a map with an invalid name should raise a validation error."""
+    update = RspamdMapUpdate(content="data")
+    with pytest.raises(RspamdMapValidationError):
+        RspamdMaps(maps_dir).update_map("not_a_valid_map", update)
+
+
+def test_rspamd_maps_update_map_missing_file(tmp_path):
+    """Updating a map when the file is missing should raise a not found error."""
+    update = RspamdMapUpdate(content="data")
+    with pytest.raises(RspamdMapNotFoundError):
+        RspamdMaps(tmp_path).update_map("bad_words", update)
