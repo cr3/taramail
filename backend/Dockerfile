@@ -12,7 +12,6 @@ RUN apk add --no-cache \
   build-base \
   libffi-dev \
   mariadb-connector-c-dev \
-  libmemcached-dev \
   pkgconf
 
 WORKDIR /app
@@ -36,7 +35,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 RUN apk add --no-cache \
   mariadb-connector-c \
-  libmemcached-libs \
   nftables \
   py3-nftables
 

@@ -13,11 +13,6 @@ jobs:
       - name: Check out
         uses: actions/checkout@v6
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libmemcached-dev
-          version: 1.0
-
       - name: Set up Node environment
         uses: actions/setup-node@v6
         with:
@@ -45,11 +40,6 @@ jobs:
         with:
           submodules: true
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libmemcached-dev
-          version: 1.0
-
       - name: Set up Python environment
         uses: ./.github/actions/setup-uv-env
         with:
@@ -76,11 +66,6 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v6
-
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libmemcached-dev
-          version: 1.0
 
       - name: Set up Python environment
         uses: ./.github/actions/setup-uv-env

@@ -9,7 +9,7 @@ from time import time
 from typing import Any
 
 from attrs import define, field
-from pylibmc import Client
+from pymemcache.client.hash import HashClient
 from redis import StrictRedis
 from redis.exceptions import ResponseError
 from yarl import URL
@@ -82,14 +82,11 @@ class MemcachedStore(Store):
 
     @classmethod
     def from_servers(cls, servers: list[str]) -> "MemcachedStore":
-        client = Client(
-            servers,
-            binary=True,
-            behaviors={
-                "tcp_nodelay": True,
-                "ketama": True,
-            },
-        )
+        parsed = []
+        for server in servers:
+            host, port = server.rsplit(":", 1)
+            parsed.append((host, int(port)))
+        client = HashClient(parsed, no_delay=True)
         return cls(client)
 
     @classmethod
@@ -98,9 +95,8 @@ class MemcachedStore(Store):
 
     def get(self, key: str) -> str:
         """See `Store.get`."""
-        try:
-            value = self.client[key]
-        except KeyError:
+        value = self.client.get(key)
+        if value is None:
             return None
 
         with suppress(ValueError):
@@ -108,22 +104,24 @@ class MemcachedStore(Store):
             if isinstance(data, dict):
                 raise TypeError("Wrong type")
 
-        return value
+        return value.decode("utf-8")
 
     def set(self, key: str, value: str, ttl: int | None = None) -> bool:
         """See `Store.set`."""
-        if ttl is None:
-            ttl = -1
-        self.client.set(key, str(value), ttl)
+        expire = 0 if ttl is None else ttl
+        self.client.set(key, str(value), expire=expire)
         return True
 
     def delete(self, *keys: str) -> int:
         """See `Store.delete`."""
-        return sum(self.client.delete(key) for key in keys)
+        return sum(self.client.delete(key, noreply=False) for key in keys)
 
     def hget(self, key: str, field: str) -> str | None:
         """See `Store.hget`."""
-        payload = self.client.get(key, "{}")
+        payload = self.client.get(key)
+        if payload is None:
+            payload = "{}"
+
         try:
             data = json.loads(payload)
         except ValueError as e:
@@ -133,7 +131,10 @@ class MemcachedStore(Store):
 
     def hgetall(self, key: str) -> dict[str, Any]:
         """See `Store.hgetall`."""
-        payload = self.client.get(key, "{}")
+        payload = self.client.get(key)
+        if payload is None:
+            payload = "{}"
+
         with suppress(ValueError):
             return json.loads(payload)
 
@@ -141,7 +142,10 @@ class MemcachedStore(Store):
 
     def hset(self, key: str, field: str, value: str, ttl: int | None = None) -> int:  # F402
         """See `Store.hset`."""
-        payload = self.client.get(key, "{}")
+        payload = self.client.get(key)
+        if payload is None:
+            payload = "{}"
+
         try:
             data = json.loads(payload)
         except ValueError as e:
