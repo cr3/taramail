@@ -36,7 +36,7 @@ class ForwardingHostDetails(BaseModel):
 
 
 class ForwardingHostUpdate(BaseModel):
-    keep_spam: bool
+    keep_spam: bool | None = None
 
 
 @define(frozen=True)
@@ -107,7 +107,10 @@ class ForwardingHostManager:
         if not self.store.hget("WHITELISTED_FWD_HOST", host):
             raise ForwardingHostNotFoundError(f"Forwarding host {host} not found")
 
-        # Update spam filtering setting
+        # Update spam filtering setting if provided
+        if forwarding_host_update.keep_spam is None:
+            return
+
         if forwarding_host_update.keep_spam:
             self.store.hset("KEEP_SPAM", host, "1")
         else:
