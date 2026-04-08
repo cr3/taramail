@@ -9,7 +9,7 @@ LIVE_DIR="${LE_DIR}/live/${MAIL_HOSTNAME}"
 ARCHIVE_DIR="${LE_DIR}/archive/${MAIL_HOSTNAME}"
 RENEWAL_DIR="${LE_DIR}/renewal"
 
-if [ -e "${LIVE_DIR}/fullchain.pem" ] && [ -e "${LIVE_DIR}/privkey" ]; then
+if [ -e "${LIVE_DIR}/fullchain.pem" ] && [ -e "${LIVE_DIR}/privkey.pem" ]; then
   echo "Reusing existing certificate for ${MAIL_HOSTNAME}!"
   exit 0
 fi
