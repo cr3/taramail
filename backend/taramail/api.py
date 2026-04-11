@@ -54,14 +54,6 @@ from taramail.deps import (
     QueueDep,
     StoreDep,
 )
-from taramail.forwarding_host import (
-    ForwardingHostCreate,
-    ForwardingHostDetails,
-    ForwardingHostManager,
-    ForwardingHostNotFoundError,
-    ForwardingHostUpdate,
-    ForwardingHostValidationError,
-)
 from taramail.dkim import (
     DKIMAlreadyExistsError,
     DKIMCreate,
@@ -78,6 +70,14 @@ from taramail.domain import (
     DomainNotFoundError,
     DomainUpdate,
     DomainValidationError,
+)
+from taramail.forwarding_host import (
+    ForwardingHostCreate,
+    ForwardingHostDetails,
+    ForwardingHostManager,
+    ForwardingHostNotFoundError,
+    ForwardingHostUpdate,
+    ForwardingHostValidationError,
 )
 from taramail.mailbox import (
     MailboxAlreadyExistsError,
@@ -108,9 +108,9 @@ from taramail.rspamd import (
     RspamdBcc,
     RspamdMapDetails,
     RspamdMapNotFoundError,
+    RspamdMaps,
     RspamdMapUpdate,
     RspamdMapValidationError,
-    RspamdMaps,
     RspamdSettings,
 )
 from taramail.schemas import (

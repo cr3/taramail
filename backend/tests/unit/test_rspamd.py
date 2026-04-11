@@ -1,7 +1,6 @@
 """Unit tests for the rspamd module."""
 
 import re
-from pathlib import Path
 
 import pytest
 from hamcrest import (
@@ -32,9 +31,9 @@ from taramail.rspamd import (
     RspamdAliasexp,
     RspamdBcc,
     RspamdMapNotFoundError,
+    RspamdMaps,
     RspamdMapUpdate,
     RspamdMapValidationError,
-    RspamdMaps,
     RspamdSettings,
 )
 
