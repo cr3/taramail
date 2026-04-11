@@ -59,11 +59,6 @@ real_ip_header proxy_protocol;
 {% endif %}
 real_ip_recursive on;
 
-location ^~ /.well-known/acme-challenge/ {
-    allow all;
-    default_type "text/plain";
-}
-
 location /nginx_status {
     stub_status on;
     access_log off;
