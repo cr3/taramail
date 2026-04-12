@@ -57,7 +57,7 @@ services:
     restart: always
 
   certbot:
-    image: certbot/certbot:v5.4.0
+    image: certbot/certbot:v5.5.0
     depends_on:
       dockerapi:
         condition: service_started
