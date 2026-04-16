@@ -1,9 +1,9 @@
 TaraMail
 ========
 
-.. image:: https://github.com/cr3/taramail/workflows/test/badge.svg
-       :target: https://github.com/cr3/taramail/actions
-.. image:: https://github.com/cr3/taramail/workflows/deploy/badge.svg
+.. image:: https://github.com/taradix/taramail/workflows/test/badge.svg
+       :target: https://github.com/taradix/taramail/actions
+.. image:: https://github.com/taradix/taramail/workflows/deploy/badge.svg
        :target: https://mail.taram.ca
 
 Communauté de Notre-Dame-du-Laus.
