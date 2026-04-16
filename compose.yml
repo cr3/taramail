@@ -57,11 +57,6 @@ services:
           - taramail-blackbox-exporter
     restart: always
 
-#  certbot:
-#    depends_on:
-#      unbound:
-#        condition: service_healthy
-
   clamd:
     image: clamav/clamav:1.5.2-35
     depends_on:
