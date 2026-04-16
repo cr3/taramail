@@ -237,5 +237,5 @@ parent_domain_matches_subdomains = debug_peer_list,fast_flush_domains,mynetworks
 
 
 # User Overrides
-myhostname = taram.ca
+myhostname = mail.taram.ca
 

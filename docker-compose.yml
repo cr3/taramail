@@ -1,7 +1,8 @@
 x-build-args: &python-build-args
   PYTHON_VERSION: ${PYTHON_VERSION:-3.13.10}
 name: taramail
-
+include:
+  - path: ./taracert/compose.yml
 services:
   api:
     build:
@@ -56,36 +57,10 @@ services:
           - taramail-blackbox-exporter
     restart: always
 
-  certbot:
-    image: certbot/certbot:v5.5.0
-    depends_on:
-      dockerapi:
-        condition: service_started
-      unbound:
-        condition: service_healthy
-    volumes:
-      - ./certbot/deploy-hook.sh:/deploy-hook.sh:ro
-      - certbot-certs:/etc/letsencrypt
-      - certbot-www:/var/www/html
-    environment:
-      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
-    networks:
-      default:
-        aliases:
-          - taramail-certbot
-    command: >
-      sh -c "trap exit TERM; while :; do
-        certbot renew --webroot --webroot-path=/var/www/html --deploy-hook /deploy-hook.sh;
-        sleep 12h;
-      done"
-    entrypoint: ""
-    restart: always
-    healthcheck:
-      test: [ "CMD", "test", "-e", "/etc/letsencrypt/live/fullchain.pem" ]
-      start_period: 10s
-      interval: 10s
-      timeout: 5s
-      retries: 15
+#  certbot:
+#    depends_on:
+#      unbound:
+#        condition: service_healthy
 
   clamd:
     image: clamav/clamav:1.5.2-35
@@ -180,7 +155,7 @@ services:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
-      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+      - SERVER_HOSTNAME=${SERVER_HOSTNAME}
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
       - ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}
       - MAILDIR_GC_TIME=${MAILDIR_GC_TIME:-7200}
@@ -326,7 +301,7 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d/:z
       - sogo-web-vol-1:/usr/lib/GNUstep/SOGo/
     environment:
-      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+      - SERVER_HOSTNAME=${SERVER_HOSTNAME}
       - ADDITIONAL_SERVER_NAMES=${ADDITIONAL_SERVER_NAMES:-}
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
     ports:
@@ -396,7 +371,7 @@ services:
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       - REDISPASS=${REDISPASS}
-      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+      - SERVER_HOSTNAME=${SERVER_HOSTNAME}
     ports:
       - '${SMTP_PORT:-25}:25'
       - '${SMTPS_PORT:-465}:465'
@@ -530,7 +505,7 @@ services:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
-      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+      - SERVER_HOSTNAME=${SERVER_HOSTNAME}
       - ACL_ANYONE=${ACL_ANYONE:-disallow}
       - ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
@@ -582,8 +557,6 @@ networks:
 
 volumes:
   backend-docs:
-  certbot-certs:
-  certbot-www:
   clamd-vol-1:
   crypt-vol-1:
   mysql-vol-1:

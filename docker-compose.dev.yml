@@ -1,4 +1,6 @@
 name: taramail
+include:
+  - path: ./taracert/compose.dev.yml
 services:
   api:
     volumes:
@@ -6,15 +8,6 @@ services:
       - ./backend/alembic:/app/alembic
     command: >
       sh -c "alembic upgrade head && uvicorn --host=0.0.0.0 --port=80 taramail.api:app --log-config=/app/log-config.dev.yaml --reload"
-
-  certbot:
-    volumes:
-      - ./certbot/generate-cert.sh:/generate-cert.sh:ro
-      - ./certbot/dhparams.pem:/etc/letsencrypt/dhparams.pem:ro
-    environment:
-      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
-    command: >
-      sh -c "trap exit TERM; /generate-cert.sh; /deploy-hook.sh; echo Ready; sleep infinity"
 
   custom-exporter:
     volumes:

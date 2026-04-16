@@ -33,7 +33,8 @@ def env_vars(project):
         "DBROOT": "test",
         "SKIP_FTS": "y",
         "REDISPASS": "test",
-        "MAIL_HOSTNAME": "test.local",
+        "GENERATE_DHPARAMS": "1",
+        "SERVER_HOSTNAME": "test.local",
         "PYTHON_VERSION": python_version,
     }
 

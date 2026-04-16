@@ -44,7 +44,7 @@ try:
             break
 
     time_now = int(time.time())
-    mail_hostname = os.environ.get("MAIL_HOSTNAME")
+    hostname = os.environ.get("SERVER_HOSTNAME")
 
     max_score = float(r.get("Q_MAX_SCORE") or "9999.0")
     if max_score == "":
@@ -101,7 +101,7 @@ try:
             with open("/templates/quarantine.tpl") as f:
                 template = Template(f.read())
         html = template.render(
-            meta=meta_query, username=rcpt, counter=msg_count, hostname=mail_hostname, quarantine_acl=quarantine_acl
+            meta=meta_query, username=rcpt, counter=msg_count, hostname=hostname, quarantine_acl=quarantine_acl
         )
         text = html2text.html2text(html)
         count = 0

@@ -47,7 +47,7 @@ http {
         listen 80 default_server;
         listen [::]:80 default_server;
 
-        server_name {{ MAIL_HOSTNAME }} autodiscover.* autoconfig.* {{ ADDITIONAL_SERVER_NAMES | join(' ') }};
+        server_name {{ SERVER_HOSTNAME }} autodiscover.* autoconfig.* {{ ADDITIONAL_SERVER_NAMES | join(' ') }};
 
         if ( $request_uri ~* "%0A|%0D" ) { return 403; }
         location ^~ /.well-known/acme-challenge/ {
@@ -71,7 +71,7 @@ http {
         ssl_certificate /etc/letsencrypt/live/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/privkey.pem;
 
-        server_name {{ MAIL_HOSTNAME }} autodiscover.* autoconfig.*;
+        server_name {{ SERVER_HOSTNAME }} autodiscover.* autoconfig.*;
 
         include /etc/nginx/includes/sites-default.conf;
     }

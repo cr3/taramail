@@ -9,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 def includes_conf(env, template_vars):
     conf_d = Path("/etc/nginx/conf.d")
     conf_d.joinpath("server_name.active").write_text(dedent(f"""
-        server_name {template_vars['MAIL_HOSTNAME']} autodiscover.* autoconfig.* {' '.join(template_vars['ADDITIONAL_SERVER_NAMES'])};
+        server_name {template_vars['SERVER_HOSTNAME']} autodiscover.* autoconfig.* {' '.join(template_vars['ADDITIONAL_SERVER_NAMES'])};
     """))
 
 def sites_default_conf(env, template_vars):
@@ -31,7 +31,7 @@ def prepare_template_vars(environ):
     template_vars = {
         "IPV4_NETWORK": ipv4_network,
         "TRUSTED_NETWORK": environ.get("TRUSTED_NETWORK", False),
-        "MAIL_HOSTNAME": environ.get("MAIL_HOSTNAME", ""),
+        "SERVER_HOSTNAME": environ.get("SERVER_HOSTNAME", ""),
         "ADDITIONAL_SERVER_NAMES": [item.strip() for item in additional_server_names.split(",") if item.strip()],
     }
 
@@ -49,7 +49,7 @@ def prepare_template_vars(environ):
             if cert_path.is_file() and key_path.is_file() and domains_path.is_file():
                 domains = domains_path.read_text().strip()
                 domains_list = domains.split()
-                if domains_list and template_vars["MAIL_HOSTNAME"] not in domains_list:
+                if domains_list and template_vars["SERVER_HOSTNAME"] not in domains_list:
                     template_vars["valid_cert_dirs"].append({
                         "cert_path": d.absolute().as_posix() + "/",
                         "domains": domains,

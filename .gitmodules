@@ -1,3 +1,6 @@
 [submodule "postfix_exporter"]
 	path = postfix_exporter
 	url = git@github.com:cr3/postfix_exporter.git
+[submodule "taracert"]
+	path = taracert
+	url = git@github.com:cr3/taracert.git
