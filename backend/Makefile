@@ -19,7 +19,7 @@ setup: $(VENV)
 
 .PHONY: check
 check: $(VENV)
-	@echo "==> Checking Poetry lock..."
+	@echo "==> Checking uv lock..."
 	@uv lock --check
 	@echo "==> Linting Python code..."
 	@$(RUN) ruff check .
