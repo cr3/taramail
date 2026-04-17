@@ -14,6 +14,7 @@ from taramail.password import PasswordPolicyManager
 from taramail.relayhost import RelayHostManager
 from taramail.sogo import Sogo
 from taramail.spf import SPFResolver
+from taramail.transport import TransportManager
 
 
 @pytest.fixture
@@ -73,3 +74,9 @@ def relayhost_manager(db_session):
 def sogo(db_session, memcached_store):
     """Sogo fixture."""
     return Sogo(db_session, memcached_store)
+
+
+@pytest.fixture
+def transport_manager(db_session):
+    """Transport manager fixture."""
+    return TransportManager(db_session)

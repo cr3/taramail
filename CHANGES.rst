@@ -9,6 +9,7 @@ Released 2026-04-02
 -   Add ofelia service.
 -   Add password policy.
 -   Add relayhost support.
+-   Add transport support.
 -   Add API for rspamd custom maps.
 -   Add API for forwarding hosts.
 -   Move DynDNS to taramux.

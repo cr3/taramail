@@ -344,3 +344,58 @@ def test_api_relayhosts_delete(api_app, unique):
     api_app.delete(f"/api/relayhosts/{relayhost_id}")
     response = api_app.get(f"/api/relayhosts/{relayhost_id}")
     assert response.status_code == 404
+
+
+def test_api_transports_get(api_app, unique):
+    """Getting transports should return the list of transport ids."""
+    destination = unique("domain")
+    response = api_app.post("/api/transports", json={
+        "destination": destination,
+        "nexthop": "smtp.example.com",
+    })
+    transport_id = response.json()["id"]
+    response = api_app.get("/api/transports")
+    assert_that(response.json(), has_item(transport_id))
+
+
+def test_api_transports_post(api_app, unique):
+    """Posting a transport should create it in the api."""
+    destination = unique("domain")
+    response = api_app.post("/api/transports", json={
+        "destination": destination,
+        "nexthop": "smtp.example.com",
+        "username": "user",
+        "password": "pass",
+    })
+    assert response.status_code == 200
+    transport_id = response.json()["id"]
+    response = api_app.get(f"/api/transports/{transport_id}")
+    assert response.status_code == 200
+    assert_that(response.json(), has_entries(destination=destination, username="user"))
+
+
+def test_api_transports_put(api_app, unique):
+    """Putting a transport should update it from the attributes."""
+    destination = unique("domain")
+    response = api_app.post("/api/transports", json={
+        "destination": destination,
+        "nexthop": "smtp.example.com",
+    })
+    transport_id = response.json()["id"]
+    new_destination = unique("domain")
+    api_app.put(f"/api/transports/{transport_id}", json={"destination": new_destination})
+    response = api_app.get(f"/api/transports/{transport_id}")
+    assert_that(response.json(), has_entries(destination=new_destination))
+
+
+def test_api_transports_delete(api_app, unique):
+    """Deleting a transport should delete it from the list."""
+    destination = unique("domain")
+    response = api_app.post("/api/transports", json={
+        "destination": destination,
+        "nexthop": "smtp.example.com",
+    })
+    transport_id = response.json()["id"]
+    api_app.delete(f"/api/transports/{transport_id}")
+    response = api_app.get(f"/api/transports/{transport_id}")
+    assert response.status_code == 404

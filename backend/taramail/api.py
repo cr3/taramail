@@ -122,6 +122,15 @@ from taramail.spf import (
     DNSResolver,
     SPFResolver,
 )
+from taramail.transport import (
+    TransportAlreadyExistsError,
+    TransportCreate,
+    TransportDetails,
+    TransportManager,
+    TransportNotFoundError,
+    TransportUpdate,
+    TransportValidationError,
+)
 
 logger = logging.getLogger("uvicorn")
 app = FastAPI(
@@ -204,6 +213,11 @@ def get_sogo(db: DbDep, memcached: MemcachedDep):
     return Sogo(db, memcached)
 
 SogoDep = Annotated[Sogo, Depends(get_sogo)]
+
+def get_transport_manager(db: DbDep):
+    return TransportManager(db)
+
+TransportManagerDep = Annotated[TransportManager, Depends(get_transport_manager)]
 
 
 @app.get("/api/domains")
@@ -355,6 +369,37 @@ def delete_relayhost(relayhost_id: int, manager: RelayHostManagerDep) -> None:
         manager.delete_relayhost(relayhost_id)
 
 
+@app.get("/api/transports")
+def get_transports(manager: TransportManagerDep) -> list[int]:
+    return [t.id for t in manager.get_transports()]
+
+
+@app.get("/api/transports/{transport_id}")
+def get_transport(transport_id: int, manager: TransportManagerDep) -> TransportDetails:
+    return manager.get_transport_details(transport_id)
+
+
+@app.post("/api/transports")
+def post_transport(create: TransportCreate, manager: TransportManagerDep) -> TransportDetails:
+    with db_transaction(manager.db):
+        transport = manager.create_transport(create)
+    return manager.get_transport_details(transport.id)
+
+
+@app.put("/api/transports/{transport_id}")
+def put_transport(transport_id: int, update: TransportUpdate, manager: TransportManagerDep) -> TransportDetails:
+    with db_transaction(manager.db):
+        manager.update_transport(transport_id, update)
+
+    return manager.get_transport_details(transport_id)
+
+
+@app.delete("/api/transports/{transport_id}")
+def delete_transport(transport_id: int, manager: TransportManagerDep) -> None:
+    with db_transaction(manager.db):
+        manager.delete_transport(transport_id)
+
+
 @app.get("/api/dkim")
 def get_dkim_keys(manager: DKIMManagerDep) -> dict[str, str]:
     return manager.get_keys()
@@ -498,6 +543,9 @@ error_handlers = {
     RelayHostValidationError: 400,
     RspamdMapNotFoundError: 404,
     RspamdMapValidationError: 400,
+    TransportAlreadyExistsError: 409,
+    TransportNotFoundError: 404,
+    TransportValidationError: 400,
 }
 
 def create_error_handler(exc_class, status_code):
