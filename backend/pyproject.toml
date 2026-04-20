@@ -6,61 +6,55 @@ authors = [
     {name = "Marc Tardif", email = "marc@taram.ca"},
 ]
 readme = "README.rst"
-repository = "https://github.com/taradix/taramail"
-packages = [
-    {include = "taramail"},
-]
-include = [
-    "taramail/templates/**/*.j2",
-]
+
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "aiodocker (>=0.24.0,<1.0.0)",
-    "alembic (>=1.14.1,<2.0.0)",
-    "attrs (>=26.1.0,<26.2.0)",
-    "bcrypt (>=5.0.0,<5.1.0)",
-    "cryptography (>=46.0.3,<46.1.0)",
-    "dnspython (>=2.7.0,<3.0.0)",
-    "fastapi (>=0.115.6,<1.0.0)",
-    "idna (>=3.11,<4.0)",
-    "ipaddress (>=1.0.23,<2.0.0)",
-    "jinja2 (>=3.1.6,<4.0.0)",
-    "lookuper (>=0.5.1,<1.0.0)",
-    "more-itertools (>=11.0.1,<11.1.0)",
-    "mysqlclient (>=2.2.7,<3.0.0)",
-    "pip-nftables (>=1.0.2.post1,<2.0.0)",
-    "prometheus-client (>=0.23.1,<1.0.0)",
-    "prometheus-fastapi-instrumentator (>=7.1.0,<8.0.0)",
-    "pydantic[email] (>=2.12.3,<3.0.0)",
-    "pymemcache (>=4.0.0,<5.0.0)",
-    "redis (>=7.4.0,<7.5.0)",
-    "requests (>=2.32.3,<3.0.0)",
-    "sqlalchemy-utils (>=0.41.2,<1.0.0)",
-    "sqlalchemy[asyncio] (>=2.0.37,<3.0.0)",
-    "uvicorn[standard] (>=0.34.0,<1.0.0)",
-    "yarl (>=1.18.3,<2.0.0)",
+    "aiodocker>=0.24.0,<1.0.0",
+    "alembic>=1.14.1,<2.0.0",
+    "attrs>=26.1.0,<26.2.0",
+    "bcrypt>=5.0.0,<5.1.0",
+    "cryptography>=46.0.3,<46.1.0",
+    "dnspython>=2.7.0,<3.0.0",
+    "fastapi>=0.115.6,<1.0.0",
+    "idna>=3.11,<4.0",
+    "ipaddress>=1.0.23,<2.0.0",
+    "jinja2>=3.1.6,<4.0.0",
+    "lookuper>=0.5.1,<1.0.0",
+    "more-itertools>=11.0.1,<11.1.0",
+    "mysqlclient>=2.2.7,<3.0.0",
+    "pip-nftables>=1.0.2.post1,<2.0.0",
+    "prometheus-client>=0.23.1,<1.0.0",
+    "prometheus-fastapi-instrumentator>=7.1.0,<8.0.0",
+    "pydantic[email]>=2.12.3,<3.0.0",
+    "pymemcache>=4.0.0,<5.0.0",
+    "redis>=7.4.0,<7.5.0",
+    "requests>=2.32.3,<3.0.0",
+    "sqlalchemy-utils>=0.41.2,<1.0.0",
+    "sqlalchemy[asyncio]>=2.0.37,<3.0.0",
+    "uvicorn[standard]>=0.34.0,<1.0.0",
+    "yarl>=1.18.3,<2.0.0",
 ]
 
 [project.optional-dependencies]
 
 test = [
-  "coverage>=7.2.3,<8.0.0",
-  "httpx>=0.28.1,<1.0.0",
-  "pyhamcrest>=2.1.0,<3.0.0",
-  "pytest>=9.0.0,<10.0.0",
-  "pytest-unique>=0.1.8,<1.0.0",
-  "pytest-xdocker>=0.2.8,<1.0.0",
-  "redis>=7.0.0,<8.0.0",
-  "responses>=0.26.0,<1.0.0",
+    "coverage>=7.2.3,<8.0.0",
+    "httpx>=0.28.1,<1.0.0",
+    "pyhamcrest>=2.1.0,<3.0.0",
+    "pytest>=9.0.0,<10.0.0",
+    "pytest-unique>=0.1.8,<1.0.0",
+    "pytest-xdocker>=0.2.8,<1.0.0",
+    "redis>=7.0.0,<8.0.0",
+    "responses>=0.26.0,<1.0.0",
 ]
 
 check = [
-  "ruff>=0.15.0,<1.0.0",
+    "ruff>=0.15.0,<1.0.0",
 ]
 
 docs = [
-  "sphinx>=9.0.0,<10.0.0",
-  "sphinxcontrib-log-cabinet>=1.0.1,<2.0.0",
+    "sphinx>=9.0.0,<10.0.0",
+    "sphinxcontrib-log-cabinet>=1.0.1,<2.0.0",
 ]
 
 [project.entry-points."pytest11"]
@@ -91,6 +85,9 @@ redis = "taramail.store:RedisStore"
 netfilter = "taramail.netfilter:main"
 taramail = "taramail.cli:main"
 
+[project.urls]
+Repository = "https://github.com/taradix/taramail"
+
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
@@ -99,7 +96,9 @@ build-backend = "hatchling.build"
 target-version = "py312"
 line-length = 120
 fix = true
-lint.select = [
+
+[tool.ruff.lint]
+select = [
     # flake8-2020
     "YTT",
     # flake8-bandit
@@ -131,7 +130,7 @@ lint.select = [
     # tryceratops
     "TRY",
 ]
-lint.ignore = [
+ignore = [
     # LineTooLong
     "E501",
     # DoNotAssignLambda
