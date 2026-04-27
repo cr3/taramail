@@ -402,7 +402,7 @@ services:
     restart: always
 
   prometheus:
-    image: prom/prometheus:v3.11.2
+    image: prom/prometheus:v3.11.3
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
