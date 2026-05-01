@@ -42,6 +42,7 @@ test = [
     "httpx>=0.28.1,<1.0.0",
     "pyhamcrest>=2.1.0,<3.0.0",
     "pytest>=9.0.0,<10.0.0",
+    "pytest-asyncio>=1.0.0,<2.0.0",
     "pytest-unique>=0.1.8,<1.0.0",
     "pytest-xdocker>=0.2.8,<1.0.0",
     "redis>=7.0.0,<8.0.0",
@@ -147,6 +148,7 @@ ignore = [
 # Pytest options:
 #   https://docs.pytest.org/en/6.2.x/reference.html#ini-options-ref
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 addopts = [
     "--doctest-modules",
     "--doctest-glob=*.rst",

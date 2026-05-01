@@ -488,8 +488,8 @@ def get_rspamd_bcc(request: Request, bcc: RspamdBccDep) -> Response:
 
 
 @app.get("/rspamd/error", include_in_schema=False)
-def get_rspamd_error(request: Request, queue: QueueDep) -> None:
-    queue.publish("F2B_CHANNEL", f"Rspamd UI: Invalid password by {request.client.host}")
+async def get_rspamd_error(request: Request, queue: QueueDep) -> None:
+    await queue.publish("F2B_CHANNEL", f"Rspamd UI: Invalid password by {request.client.host}")
     raise HTTPException(401, "Invalid password")
 
 

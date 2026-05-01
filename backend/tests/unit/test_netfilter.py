@@ -1,6 +1,6 @@
 """Unit tests for the netfilter module."""
 
-from unittest.mock import ANY, Mock, patch
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 from hamcrest import (
@@ -50,9 +50,9 @@ def test_is_ip(address, expected):
         (["192.168.0.1", "localhost"], has_items("192.168.0.1", "127.0.0.1")),
     ],
 )
-def test_resolve_addresses(addresses, matches):
+async def test_resolve_addresses(addresses, matches):
     """Resolving addresses should only return IP adresses."""
-    result = resolve_addresses(addresses)
+    result = await resolve_addresses(addresses)
     assert_that(result, matches)
 
 
@@ -299,133 +299,115 @@ def test_netfilter_tables_run_cmd():
     )
 
 
-def test_netfilter_update_blacklist(redis_store):
+async def test_netfilter_update_blacklist(redis_store):
     """Updating the blacklist should get from F2B_BLACKLIST."""
     redis_store.hset("F2B_BLACKLIST", "127.0.0.1", 1)
     netfilter = Netfilter(redis_store, None, None)
     assert netfilter.whitelist == set()
 
-    with patch.object(Netfilter, "perm_ban") as perm_ban:
-        netfilter.update_blacklist()
+    with patch.object(Netfilter, "perm_ban", new_callable=AsyncMock) as perm_ban:
+        await netfilter.update_blacklist()
         perm_ban.assert_called_once_with(net="127.0.0.1")
 
     assert netfilter.blacklist == {"127.0.0.1"}
 
 
-def test_netfilter_update_whitelist(redis_store):
+async def test_netfilter_update_whitelist(redis_store):
     """Updating the whitelist should get from F2B_WHITELIST."""
     redis_store.hset("F2B_WHITELIST", "127.0.0.1", 1)
     netfilter = Netfilter(redis_store, None, None)
     assert netfilter.whitelist == set()
 
-    netfilter.update_whitelist()
+    await netfilter.update_whitelist()
     assert netfilter.whitelist == {"127.0.0.1"}
 
 
-def test_netfilter_service_snat4():
+async def test_netfilter_service_snat4():
     """Calling the service snat4 should call on the ipv4 tables."""
-    netfilter = Mock(lock=Mock(__enter__=Mock(), __exit__=Mock()))
+    netfilter = Mock(lock=AsyncMock())
     service = NetfilterService(netfilter, None)
 
-    def snat(*_):
-        service.exit_now = True
+    netfilter.ipv4_tables.snat.side_effect = lambda *_: service.stop_event.set()
 
-    netfilter.ipv4_tables.snat.side_effect = snat
-
-    service.snat4(None, 0)
+    await service.snat4(None, 0)
 
     netfilter.ipv4_tables.snat.assert_called_once()
 
 
-def test_netfilter_service_snat6():
+async def test_netfilter_service_snat6():
     """Calling the service snat6 should call on the ipv6 tables."""
-    netfilter = Mock(lock=Mock(__enter__=Mock(), __exit__=Mock()))
+    netfilter = Mock(lock=AsyncMock())
     service = NetfilterService(netfilter, None)
 
-    def snat(*_):
-        service.exit_now = True
+    netfilter.ipv6_tables.snat.side_effect = lambda *_: service.stop_event.set()
 
-    netfilter.ipv6_tables.snat.side_effect = snat
-
-    service.snat6(None, 0)
+    await service.snat6(None, 0)
 
     netfilter.ipv6_tables.snat.assert_called_once()
 
 
-def test_netfilter_service_autopurge():
+async def test_netfilter_service_autopurge():
     """Calling the service autopurge should autopurge the netfilter."""
-    netfilter = Mock()
+    netfilter = AsyncMock()
     service = NetfilterService(netfilter, None)
 
-    def autopurge():
-        service.exit_now = True
+    netfilter.autopurge.side_effect = lambda: service.stop_event.set()
 
-    netfilter.autopurge.side_effect = autopurge
-
-    service.autopurge(0)
+    await service.autopurge(0)
 
     netfilter.autopurge.assert_called_once()
 
 
-def test_netfilter_service_whitelist():
+async def test_netfilter_service_whitelist():
     """Calling the service whitelist should update the netfilter whitelist."""
-    netfilter = Mock()
+    netfilter = AsyncMock()
     service = NetfilterService(netfilter, None)
 
-    def update_whitelist():
-        service.exit_now = True
+    netfilter.update_whitelist.side_effect = lambda: service.stop_event.set()
 
-    netfilter.update_whitelist.side_effect = update_whitelist
-
-    service.whitelist(0.1)
+    await service.whitelist(0.1)
 
     netfilter.update_whitelist.assert_called_once()
 
 
-def test_netfilter_service_blacklist():
+async def test_netfilter_service_blacklist():
     """Calling the service blacklist should update the netfilter blacklist."""
-    netfilter = Mock()
+    netfilter = AsyncMock()
     service = NetfilterService(netfilter, None)
 
-    def update_blacklist():
-        service.exit_now = True
+    netfilter.update_blacklist.side_effect = lambda: service.stop_event.set()
 
-    netfilter.update_blacklist.side_effect = update_blacklist
-
-    service.blacklist(0.1)
+    await service.blacklist(0.1)
 
     netfilter.update_blacklist.assert_called_once()
 
 
-def test_netfilter_service_before_exit():
+async def test_netfilter_service_before_exit():
     """The service should unsubscribe before exit."""
-    queue = Mock()
-    NetfilterService(None, queue).before_exit()
+    queue = AsyncMock()
+    await NetfilterService(None, queue).before_exit()
     queue.unsubscribe.assert_called_once()
 
 
-def test_netfilter_service_before_exit_clear():
+async def test_netfilter_service_before_exit_clear():
     """The service should clear when asked before exit."""
-    netfilter, queue = Mock(), Mock()
-    NetfilterService(netfilter, queue, clear_before_exit=True).before_exit()
+    netfilter, queue = AsyncMock(), AsyncMock()
+    await NetfilterService(netfilter, queue, clear_before_exit=True).before_exit()
     netfilter.clear.assert_called_once()
 
 
-def test_netfilter_service_watch(memory_queue):
+async def test_netfilter_service_watch(memory_queue):
     """Watching should ban when a message matches on the F2B_CHANNEL."""
-    netfilter = Mock()
+    netfilter = AsyncMock()
     service = NetfilterService(netfilter, memory_queue)
 
-    def ban(_):
-        service.exit_now = True
-
-    netfilter.ban.side_effect = ban
-    memory_queue.publish(
+    netfilter.ban.side_effect = lambda _: service.stop_event.set()
+    await memory_queue.publish(
         "F2B_CHANNEL",
         "mail UI: Invalid password for .+ by 1.2.3.4",
     )
 
-    service.watch()
+    await service.watch()
 
     netfilter.ban.assert_called_once()
 

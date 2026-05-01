@@ -1,6 +1,6 @@
 """Network filtering."""
 
-import atexit
+import asyncio
 import ipaddress
 import logging
 import os
@@ -12,8 +12,8 @@ import uuid
 from argparse import ArgumentParser
 from collections import defaultdict
 from itertools import product
-from threading import Lock, Thread
 
+import dns.asyncresolver
 import dns.exception
 import dns.resolver
 from attrs import define, field
@@ -54,13 +54,13 @@ def is_ip(address):
     return True
 
 
-def resolve_addresses(addresses):
+async def resolve_addresses(addresses):
     """Return IPs from a list of addresses that might be host names."""
-    resolver = dns.resolver.Resolver()
+    resolver = dns.asyncresolver.Resolver()
     hostnames, ips = map(list, partition(is_ip, addresses))
     for hostname, rdtype in product(hostnames, ["A", "AAAA"]):
         try:
-            answer = resolver.resolve(qname=hostname, rdtype=rdtype, lifetime=3)
+            answer = await resolver.resolve(qname=hostname, rdtype=rdtype, lifetime=3)
         except dns.exception.Timeout:
             logger.info("Hostname %(hostname)s timedout on resolve", {"hostname": hostname})
             continue
@@ -606,7 +606,7 @@ class Netfilter:
     bans = field(factory=dict)
     blacklist = field(factory=set)
     whitelist = field(factory=set)
-    lock = field(factory=Lock)
+    lock = field(factory=asyncio.Lock)
 
     @classmethod
     def from_env(cls, env=os.environ):
@@ -639,7 +639,7 @@ class Netfilter:
         net_ban_time = max([ban_time, min([net_ban_time, max_ban_time])])
         return net_ban_time
 
-    def ban(self, address):
+    async def ban(self, address):
         max_attempts = self.f2boptions["max_attempts"]
         retry_window = self.f2boptions["retry_window"]
         netban_ipv4 = f"/{self.f2boptions['netban_ipv4']}"
@@ -652,7 +652,7 @@ class Netfilter:
         address = str(ip)
         self_network = ipaddress.ip_network(address)
 
-        with self.lock:
+        async with self.lock:
             whitelist = self.whitelist
 
         if whitelist:
@@ -693,10 +693,10 @@ class Netfilter:
                 },
             )
             if type(ip) is ipaddress.IPv4Address and self.f2boptions["manage_external"] != 1:
-                with self.lock:
+                async with self.lock:
                     self.ipv4_tables.ban(net)
             elif self.f2boptions["manage_external"] != 1:
-                with self.lock:
+                async with self.lock:
                     self.ipv6_tables.ban(net)
 
             self.store.hset("F2B_ACTIVE_BANS", net, cur_time + net_ban_time)
@@ -710,7 +710,7 @@ class Netfilter:
                 },
             )
 
-    def unban(self, net):
+    async def unban(self, net):
         if net not in self.bans:
             logger.info("%(net)s is not banned, skipping unban and deleting from queue (if any)", {"net": net})
             self.store.hdel("F2B_QUEUE_UNBAN", net)
@@ -723,10 +723,10 @@ class Netfilter:
             },
         )
         if type(ipaddress.ip_network(net)) is ipaddress.IPv4Network:
-            with self.lock:
+            async with self.lock:
                 self.ipv4_tables.unban(net)
         else:
-            with self.lock:
+            async with self.lock:
                 self.ipv6_tables.unban(net)
 
         self.store.hdel("F2B_ACTIVE_BANS", net)
@@ -735,17 +735,17 @@ class Netfilter:
             self.bans[net]["attempts"] = 0
             self.bans[net]["ban_counter"] += 1
 
-    def perm_ban(self, net, unban=False):
+    async def perm_ban(self, net, unban=False):
         is_unbanned = False
         is_banned = False
         if type(ipaddress.ip_network(net, strict=False)) is ipaddress.IPv4Network:
-            with self.lock:
+            async with self.lock:
                 if unban:
                     is_unbanned = self.ipv4_tables.unban(net)
                 elif self.f2boptions["manage_external"] != 1:
                     is_banned = self.ipv4_tables.ban(net)
         else:
-            with self.lock:
+            async with self.lock:
                 if unban:
                     is_unbanned = self.ipv6_tables.unban(net)
                 elif self.f2boptions["manage_external"] != 1:
@@ -768,27 +768,27 @@ class Netfilter:
                 },
             )
 
-    def autopurge(self):
+    async def autopurge(self):
         max_attempts = self.f2boptions["max_attempts"]
         queue_unban = self.store.hgetall("F2B_QUEUE_UNBAN")
         if queue_unban:
             for net in queue_unban:
-                self.unban(str(net))
+                await self.unban(str(net))
         for net in self.bans.copy():
             if self.bans[net]["attempts"] >= max_attempts:
                 net_ban_time = self.calc_net_ban_time(self.bans[net]["ban_counter"])
                 time_since_last_attempt = time.time() - self.bans[net]["last_attempt"]
                 if time_since_last_attempt > net_ban_time:
-                    self.unban(net)
+                    await self.unban(net)
 
-    def chain_order(self):
-        with self.lock:
+    async def chain_order(self):
+        async with self.lock:
             self.ipv4_tables.check_chain_order()
             self.ipv6_tables.check_chain_order()
 
-    def update_blacklist(self):
+    async def update_blacklist(self):
         blacklist = set(self.store.hgetall("F2B_BLACKLIST"))
-        new_blacklist = resolve_addresses(blacklist)
+        new_blacklist = await resolve_addresses(blacklist)
         if new_blacklist != self.blacklist:
             addban = new_blacklist.difference(self.blacklist)
             delban = self.blacklist.difference(new_blacklist)
@@ -800,14 +800,14 @@ class Netfilter:
                 },
             )
             for net in addban:
-                self.perm_ban(net=net)
+                await self.perm_ban(net=net)
             for net in delban:
-                self.perm_ban(net=net, unban=True)
+                await self.perm_ban(net=net, unban=True)
 
-    def update_whitelist(self):
+    async def update_whitelist(self):
         whitelist = set(self.store.hgetall("F2B_WHITELIST"))
-        new_whitelist = resolve_addresses(whitelist)
-        with self.lock:
+        new_whitelist = await resolve_addresses(whitelist)
+        async with self.lock:
             if new_whitelist != self.whitelist:
                 self.whitelist = new_whitelist
                 logger.info(
@@ -817,11 +817,11 @@ class Netfilter:
                     },
                 )
 
-    def clear(self):
+    async def clear(self):
         logger.info("Clearing all bans")
         for net in self.bans.copy():
-            self.unban(net)
-        with self.lock:
+            await self.unban(net)
+        async with self.lock:
             self.ipv4_tables.clear()
             self.ipv6_tables.clear()
             try:
@@ -836,7 +836,7 @@ class NetfilterService:
 
     netfilter = field()
     queue = field()
-    exit_now = field(default=False)
+    stop_event = field(factory=asyncio.Event)
     exit_code = field(default=0)
     clear_before_exit = field(default=False)
 
@@ -863,14 +863,14 @@ class NetfilterService:
             10: '([0-9a-f\\.:]+) "GET \\/SOGo\\/.* HTTP.+" 403 .+',
         }
 
-    def watch(self):
+    async def watch(self):
         logger.info("Watching Redis channel F2B_CHANNEL")
-        self.queue.subscribe("F2B_CHANNEL")
+        await self.queue.subscribe("F2B_CHANNEL")
 
-        while not self.exit_now:
+        while not self.stop_event.is_set():
             try:
                 while True:
-                    if message := self.queue.receive(timeout=60):
+                    if message := await self.queue.receive(timeout=60):
                         for rule_id, rule_regex in self.f2bregex.items():
                             if result := re.search(rule_regex, message):
                                 addr = result.group(1)
@@ -883,65 +883,69 @@ class NetfilterService:
                                             "data": message,
                                         },
                                     )
-                                    self.netfilter.ban(addr)
+                                    await self.netfilter.ban(addr)
                                     break
 
-                    if self.exit_now:
+                    if self.stop_event.is_set():
                         break
             except Exception:
                 logger.exception("Watch error")
-                self.exit_now = True
+                self.stop_event.set()
                 self.exit_code = 2
 
-    def chain_order(self):
-        while not self.exit_now:
-            time.sleep(10)
+    async def chain_order(self):
+        while not self.stop_event.is_set():
+            await asyncio.sleep(10)
             try:
-                self.netfilter.chain_order()
+                await self.netfilter.chain_order()
             except NetfilterError:
-                self.exit_now = True
+                self.stop_event.set()
                 self.exit_code = 2
 
-    def snat4(self, snat_target, delay=10):
-        while not self.exit_now:
-            time.sleep(delay)
-            with self.netfilter.lock:
+    async def snat4(self, snat_target, delay=10):
+        while not self.stop_event.is_set():
+            await asyncio.sleep(delay)
+            async with self.netfilter.lock:
                 self.netfilter.ipv4_tables.snat(snat_target, os.getenv("IPV4_NETWORK", "172.22.1") + ".0/24")
 
-    def snat6(self, snat_target, delay=10):
-        while not self.exit_now:
-            time.sleep(delay)
-            with self.netfilter.lock:
+    async def snat6(self, snat_target, delay=10):
+        while not self.stop_event.is_set():
+            await asyncio.sleep(delay)
+            async with self.netfilter.lock:
                 self.netfilter.ipv6_tables.snat(snat_target, os.getenv("IPV6_NETWORK", "fd4d:6169:6c63:6f77::/64"))
 
-    def autopurge(self, delay=10):
-        while not self.exit_now:
-            time.sleep(delay)
-            self.netfilter.autopurge()
+    async def autopurge(self, delay=10):
+        while not self.stop_event.is_set():
+            await asyncio.sleep(delay)
+            await self.netfilter.autopurge()
 
-    def whitelist(self, delay=60.0):
-        while not self.exit_now:
+    async def whitelist(self, delay=60.0):
+        while not self.stop_event.is_set():
             start_time = time.time()
-            self.netfilter.update_whitelist()
-            time.sleep(delay - ((time.time() - start_time) % delay))
+            await self.netfilter.update_whitelist()
+            await asyncio.sleep(delay - ((time.time() - start_time) % delay))
 
-    def blacklist(self, delay=60.0):
-        while not self.exit_now:
+    async def blacklist(self, delay=60.0):
+        while not self.stop_event.is_set():
             start_time = time.time()
-            self.netfilter.update_blacklist()
-            time.sleep(delay - ((time.time() - start_time) % delay))
+            await self.netfilter.update_blacklist()
+            await asyncio.sleep(delay - ((time.time() - start_time) % delay))
 
-    def sigterm_exit(self, signum, frame):
+    def handle_sigterm(self):
         self.clear_before_exit = True
-        sys.exit(self.exit_code)
+        self.stop_event.set()
 
-    def before_exit(self):
+    async def before_exit(self):
         if self.clear_before_exit:
-            self.netfilter.clear()
-        self.queue.unsubscribe("F2B_CHANNEL")
+            await self.netfilter.clear()
+        await self.queue.unsubscribe("F2B_CHANNEL")
 
 
 def main(argv=None):  # pragma: no cover
+    sys.exit(asyncio.run(_main(argv)))
+
+
+async def _main(argv=None):  # pragma: no cover
     parser = ArgumentParser()
     parser.add_argument(
         "--log-file",
@@ -956,51 +960,41 @@ def main(argv=None):  # pragma: no cover
     setup_logger(args.log_level, args.log_file)
 
     netfilter = Netfilter.from_env()
-    netfilter.clear()
+    await netfilter.clear()
 
     service = NetfilterService.from_env(netfilter)
-    atexit.register(service.before_exit)
-    signal.signal(signal.SIGTERM, service.sigterm_exit)
+
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGTERM, service.handle_sigterm)
 
     netfilter.ipv4_tables.insert_mail_chains()
     netfilter.ipv6_tables.insert_mail_chains()
     netfilter.ipv4_tables.create_isolation_rule("br-taramail", [6379])
 
-    watch_thread = Thread(target=service.watch)
-    watch_thread.daemon = True
-    watch_thread.start()
+    tasks = [
+        asyncio.create_task(service.watch()),
+        asyncio.create_task(service.autopurge()),
+        asyncio.create_task(service.chain_order()),
+        asyncio.create_task(service.blacklist()),
+        asyncio.create_task(service.whitelist()),
+    ]
 
     if snat4_ip := os.getenv("SNAT_TO_SOURCE"):
         snat4_ipo = ipaddress.ip_address(snat4_ip)
         if type(snat4_ipo) is ipaddress.IPv4Address:
-            snat4_thread = Thread(target=service.snat4, args=(snat4_ip,))
-            snat4_thread.daemon = True
-            snat4_thread.start()
+            tasks.append(asyncio.create_task(service.snat4(snat4_ip)))
 
     if snat6_ip := os.getenv("SNAT6_TO_SOURCE"):
         snat6_ipo = ipaddress.ip_address(snat6_ip)
         if type(snat6_ipo) is ipaddress.IPv6Address:
-            snat6_thread = Thread(target=service.snat6, args=(snat6_ip,))
-            snat6_thread.daemon = True
-            snat6_thread.start()
+            tasks.append(asyncio.create_task(service.snat6(snat6_ip)))
 
-    autopurge_thread = Thread(target=service.autopurge)
-    autopurge_thread.daemon = True
-    autopurge_thread.start()
+    try:
+        await service.stop_event.wait()
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await service.before_exit()
 
-    chain_order_thread = Thread(target=service.chain_order)
-    chain_order_thread.daemon = True
-    chain_order_thread.start()
-
-    blacklist_thread = Thread(target=service.blacklist)
-    blacklist_thread.daemon = True
-    blacklist_thread.start()
-
-    whitelist_thread = Thread(target=service.whitelist)
-    whitelist_thread.daemon = True
-    whitelist_thread.start()
-
-    while not service.exit_now:
-        time.sleep(0.5)
-
-    sys.exit(service.exit_code)
+    return service.exit_code

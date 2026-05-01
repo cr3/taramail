@@ -3,11 +3,11 @@
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from contextlib import contextmanager, suppress
+from contextlib import asynccontextmanager, suppress
 from time import time
 
 from attrs import define, field
-from redis import StrictRedis
+from redis.asyncio import StrictRedis
 from yarl import URL
 
 from taramail.registry import registry_load
@@ -30,29 +30,29 @@ class Queue(ABC):
         return queue_cls.from_url(url)
 
     @abstractmethod
-    def subscribe(self, topic: str) -> None:
+    async def subscribe(self, topic: str) -> None:
         """Subscribe to a topic before receiving messages."""
 
     @abstractmethod
-    def unsubscribe(self, topic: str) -> None:
+    async def unsubscribe(self, topic: str) -> None:
         """Unsubscribe from a topic after receiving messages."""
 
     @abstractmethod
-    def receive(self, timeout=None) -> str:
+    async def receive(self, timeout=None) -> str:
         """Listen for messages on the subscribed topics."""
 
     @abstractmethod
-    def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str) -> None:
         """Publish a message to a topic."""
 
-    @contextmanager
-    def connect(self, topic: str) -> "Queue":
+    @asynccontextmanager
+    async def connect(self, topic: str):
         """Context manager that subscribes on entry and unsubscribes on exit."""
-        self.subscribe(topic)
+        await self.subscribe(topic)
         try:
             yield self
         finally:
-            self.unsubscribe(topic)
+            await self.unsubscribe(topic)
 
 
 _global_memory_queues = defaultdict(list)
@@ -68,16 +68,16 @@ class MemoryQueue(Queue):
     def from_url(cls, url: URL) -> "MemoryQueue":
         return cls()
 
-    def subscribe(self, topic: str) -> None:
+    async def subscribe(self, topic: str) -> None:
         """See `Queue.subscribe`."""
         self.topics.append(topic)
 
-    def unsubscribe(self, topic: str) -> None:
+    async def unsubscribe(self, topic: str) -> None:
         """See `Queue.unsubscribe`."""
         with suppress(ValueError):
             self.topics.remove(topic)
 
-    def receive(self, timeout=None) -> str:
+    async def receive(self, timeout=None) -> str:
         """See `Queue.receive`."""
         for topic in self.topics[:]:
             # Cycle through topics.
@@ -88,7 +88,7 @@ class MemoryQueue(Queue):
 
         raise QueueEmpty("Queue is empty")
 
-    def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str) -> None:
         """See `Queue.publish`."""
         queue = self.queues[topic]
         queue.append(message)
@@ -124,24 +124,25 @@ class RedisQueue(Queue):
         url = URL(url)
         return cls.from_host(url.host, url.port, password=url.password)
 
-    def subscribe(self, topic: str) -> None:
+    async def subscribe(self, topic: str) -> None:
         """See `Queue.subscribe`."""
-        self.pubsub.subscribe(topic)
+        await self.pubsub.subscribe(topic)
 
-    def unsubscribe(self, topic: str) -> None:
+    async def unsubscribe(self, topic: str) -> None:
         """See `Queue.unsubscribe`."""
-        self.pubsub.unsubscribe(topic)
+        await self.pubsub.unsubscribe(topic)
 
-    def receive(self, timeout=0) -> str:
+    async def receive(self, timeout=0) -> str:
         """See `Queue.receive`."""
         stop_time = time() + timeout
         while True:
-            remaining_timeout = max(0, stop_time - time())
-            if message := self.pubsub.get_message(timeout=remaining_timeout):
+            remaining_timeout = max(0.0, stop_time - time())
+            message = await self.pubsub.get_message(ignore_subscribe_messages=True, timeout=remaining_timeout)
+            if message:
                 return message["data"]
             if time() >= stop_time:
                 raise QueueEmpty("Queue is empty")
 
-    def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str) -> None:
         """See `Queue.publish`."""
-        self.client.publish(topic, message)
+        await self.client.publish(topic, message)
