@@ -4,14 +4,12 @@ from functools import partial
 from typing import Annotated
 
 from fastapi import Depends
+from taraqueue import Queue
+from taraqueue.redis import RedisQueue
 
 from taramail.db import (
     DBSession,
     get_db_session,
-)
-from taramail.queue import (
-    Queue,
-    RedisQueue,
 )
 from taramail.store import (
     MemcachedStore,

@@ -1,5 +1,7 @@
 """API service."""
 
+from __future__ import annotations
+
 import logging
 import re
 from base64 import b64encode
@@ -146,7 +148,7 @@ env.filters["regex_replace"] = lambda s, p, r: re.sub(p, r, s)
 templates = Jinja2Templates(env=env)
 
 
-def get_alias_manager(db: DbDep, domain_manager: "DomainManagerDep"):
+def get_alias_manager(db: DbDep, domain_manager: DomainManagerDep):
     return AliasManager(db, domain_manager)
 
 AliasManagerDep = Annotated[AliasManager, Depends(get_alias_manager)]
@@ -174,7 +176,7 @@ def get_forwarding_host_manager(store: StoreDep):
 
 ForwardingHostManagerDep = Annotated[ForwardingHostManager, Depends(get_forwarding_host_manager)]
 
-def get_mailbox_manager(db: DbDep, password_policy_manager: "PasswordPolicyManagerDep", store: StoreDep, sogo: "SogoDep"):
+def get_mailbox_manager(db: DbDep, password_policy_manager: PasswordPolicyManagerDep, store: StoreDep, sogo: SogoDep):
     return MailboxManager(db, store, password_policy_manager, sogo)
 
 MailboxManagerDep = Annotated[MailboxManager, Depends(get_mailbox_manager)]
