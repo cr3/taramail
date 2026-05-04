@@ -27,9 +27,9 @@ services:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
     networks:
       default:
         aliases:
@@ -50,7 +50,7 @@ services:
     volumes:
       - ./blackbox_exporter/config.yml.template:/etc/blackbox_exporter/config.yml.template:ro
     environment:
-      - REDISPASS=${REDISPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       default:
         aliases:
@@ -91,7 +91,7 @@ services:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
-      - REDISPASS=${REDISPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       default:
         aliases:
@@ -157,9 +157,9 @@ services:
       - ACL_ANYONE=${ACL_ANYONE:-disallow}
       - SKIP_FTS=${SKIP_FTS:-n}
       - MASTER=${MASTER:-y}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
       - FLATCURVE_EXPERIMENTAL=${FLATCURVE_EXPERIMENTAL:-n}
     ports:
       - '${DOVEADM_PORT:-127.0.0.1:19991}:12345'
@@ -262,14 +262,14 @@ services:
     volumes:
       - /lib/modules:/lib/modules:ro
     environment:
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
       - NETFILTER_CHAIN_NAME=${NETFILTER_CHAIN_NAME:-MAIL}
       - NETFILTER_CHAIN_COMMENT=${NETFILTER_CHAIN_COMMENT:-mail}
-      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
-      - SNAT_TO_SOURCE=${SNAT_TO_SOURCE:-}
-      - SNAT6_TO_SOURCE=${SNAT6_TO_SOURCE:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
+      - SNAT_TO_SOURCE=${SNAT_TO_SOURCE:-}
+      - SNAT6_TO_SOURCE=${SNAT6_TO_SOURCE:-}
     network_mode: "host"
     command: netfilter
     restart: always
@@ -363,9 +363,9 @@ services:
       - DBNAME=${DBNAME}
       - DBUSER=${DBUSER}
       - DBPASS=${DBPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
       - SERVER_HOSTNAME=${SERVER_HOSTNAME}
     ports:
       - '${SMTP_PORT:-25}:25'
@@ -424,7 +424,7 @@ services:
       - ./redis/docker-entrypoint.sh:/docker-entrypoint.sh:Z
       - redis-vol-1:/data/
     environment:
-      - REDISPASS=${REDISPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       default:
         ipv4_address: ${IPV4_NETWORK:-172.22.1}.249
@@ -443,7 +443,7 @@ services:
         condition: service_started
     environment:
       - REDIS_ADDR=redis:6379
-      - REDIS_PASSWORD=${REDISPASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       default:
         aliases:
@@ -469,9 +469,9 @@ services:
       - rspamd-vol-1:/var/lib/rspamd
     environment:
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
     networks:
       default:
         aliases:
@@ -506,9 +506,9 @@ services:
       - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
       - SOGO_EXPIRE_SESSION=${SOGO_EXPIRE_SESSION:-480}
       - MASTER=${MASTER:-y}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
       - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      - REDISPASS=${REDISPASS}
       - TZ=${TZ}
     networks:
       default:

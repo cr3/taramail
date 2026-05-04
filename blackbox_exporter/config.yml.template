@@ -95,7 +95,7 @@ modules:
     tcp:
       preferred_ip_protocol: "ip4"
       query_response:
-        - send: "AUTH ${REDISPASS}"
+        - send: "AUTH ${REDIS_PASSWORD}"
         - expect: "^\\+OK"
         - send: "PING"
         - expect: "^\\+PONG"

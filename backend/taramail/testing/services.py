@@ -32,7 +32,7 @@ def env_vars(project):
         "DBPASS": "test",
         "DBROOT": "test",
         "SKIP_FTS": "y",
-        "REDISPASS": "test",
+        "REDIS_PASSWORD": "test",
         "GENERATE_DHPARAMS": "1",
         "SERVER_HOSTNAME": "test.local",
         "PYTHON_VERSION": python_version,
@@ -176,7 +176,7 @@ def redis_client(redis_service, env_vars):
         port=6379,
         decode_responses=True,
         db=0,
-        password=env_vars["REDISPASS"],
+        password=env_vars["REDIS_PASSWORD"],
     )
 
 

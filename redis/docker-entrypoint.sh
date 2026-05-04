@@ -128,7 +128,7 @@ if [ "$IS_REDIS_SERVER" ] && [ -z "$SKIP_DROP_PRIVS" ] && [ "$(id -u)" = '0' ] &
 	# Create config file after fixing permissions
 	if [ -n "$CONFIG" ]; then
 		cat <<EOF > "$CONFIG"
-requirepass $REDISPASS
+requirepass $REDIS_PASSWORD
 user quota_notify on nopass ~QW_* -@all +get +hget +ping
 EOF
 	fi
