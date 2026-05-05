@@ -30,7 +30,7 @@ def redis_store(redis_service, env_vars):
         scheme="redis",
         host=redis_service.ip,
         port=6379,
-        password=env_vars["REDISPASS"],
+        password=env_vars["REDIS_PASSWORD"],
     )
     return Store.from_url(url)
 

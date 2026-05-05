@@ -21,6 +21,8 @@ extensions = [
     "sphinxcontrib.log_cabinet",
 ]
 
+autodoc_mock_imports = ["fastapi", "pytest", "pytest_xdocker"]
+
 language = "en"
 
 # Suppress warnings for ambiguous cross-references

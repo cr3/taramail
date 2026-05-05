@@ -1792,6 +1792,7 @@ dependencies = [
     { name = "requests" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "sqlalchemy-utils" },
+    { name = "taraqueue", extra = ["redis"] },
     { name = "uvicorn", extra = ["standard"] },
     { name = "yarl" },
 ]
@@ -1836,7 +1837,7 @@ requires-dist = [
     { name = "pip-nftables", specifier = ">=1.0.2.post1,<2.0.0" },
     { name = "prometheus-client", specifier = ">=0.23.1,<1.0.0" },
     { name = "prometheus-fastapi-instrumentator", specifier = ">=7.1.0,<8.0.0" },
-    { name = "pydantic", extras = ["email"], specifier = ">=2.12.3,<3.0.0" },
+    { name = "pydantic", extras = ["email"], specifier = ">=2.13.0" },
     { name = "pyhamcrest", marker = "extra == 'test'", specifier = ">=2.1.0,<3.0.0" },
     { name = "pymemcache", specifier = ">=4.0.0,<5.0.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.0,<10.0.0" },
@@ -1852,10 +1853,28 @@ requires-dist = [
     { name = "sphinxcontrib-log-cabinet", marker = "extra == 'docs'", specifier = ">=1.0.1,<2.0.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.37,<3.0.0" },
     { name = "sqlalchemy-utils", specifier = ">=0.41.2,<1.0.0" },
+    { name = "taraqueue", extras = ["redis"], specifier = ">=0.3.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0,<1.0.0" },
     { name = "yarl", specifier = ">=1.18.3,<2.0.0" },
 ]
 provides-extras = ["test", "check", "docs"]
+
+[[package]]
+name = "taraqueue"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "yarl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/2a/6a05e730609173b2810761521d39d92f501207038b9f67b603de37207672/taraqueue-0.3.0.tar.gz", hash = "sha256:b42ca9d91c831f9a7d36948a1c41a6fdf881bfcc00b24bacef742f5ba14f254f", size = 78094, upload-time = "2026-05-04T18:23:18.04Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/9f/ad740bc2f012e7c39df5c8ab34e8d6e61b322a15454712973dd585e5c6ee/taraqueue-0.3.0-py3-none-any.whl", hash = "sha256:b8b1af7977206f57e5937e9ff48d02a47a2f05c0ace46b28313a7d6db7d0e270", size = 8482, upload-time = "2026-05-04T18:23:16.775Z" },
+]
+
+[package.optional-dependencies]
+redis = [
+    { name = "redis" },
+]
 
 [[package]]
 name = "typing-extensions"

@@ -324,7 +324,7 @@ class RedisStore(StrictRedis, Store):
     def from_env(cls, env=os.environ) -> "RedisStore":
         host = env.get("REDIS_SLAVEOF_IP", "") or env.get("IPV4_NETWORK", "172.22.1") + ".249"
         port = int(env.get("REDIS_SLAVEOF_PORT", "") or "6379")
-        password = env.get("REDISPASS")
+        password = env.get("REDIS_PASSWORD")
         return cls.from_host(host, port, password=password)
 
     @classmethod

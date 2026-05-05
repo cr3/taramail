@@ -34,7 +34,7 @@ try:
                 decode_responses=True,
                 port=6379,
                 db=0,
-                password=os.environ["REDISPASS"],
+                password=os.environ["REDIS_PASSWORD"],
             )
             r.ping()
         except Exception as ex:

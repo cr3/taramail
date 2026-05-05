@@ -25,12 +25,13 @@ dependencies = [
     "pip-nftables>=1.0.2.post1,<2.0.0",
     "prometheus-client>=0.23.1,<1.0.0",
     "prometheus-fastapi-instrumentator>=7.1.0,<8.0.0",
-    "pydantic[email]>=2.12.3,<3.0.0",
+    "pydantic[email]>=2.13.0",
     "pymemcache>=4.0.0,<5.0.0",
     "redis>=7.4.0,<7.5.0",
     "requests>=2.32.3,<3.0.0",
     "sqlalchemy-utils>=0.41.2,<1.0.0",
     "sqlalchemy[asyncio]>=2.0.37,<3.0.0",
+    "taraqueue[redis]>=0.3.0",
     "uvicorn[standard]>=0.34.0,<1.0.0",
     "yarl>=1.18.3,<2.0.0",
 ]
@@ -64,7 +65,6 @@ taramail-db = "taramail.testing.db"
 taramail-exporters = "taramail.testing.exporters"
 taramail-managers = "taramail.testing.managers"
 taramail-services = "taramail.testing.services"
-taramail-queue = "taramail.testing.queue"
 taramail-store = "taramail.testing.store"
 
 [project.entry-points."pytest_unique"]
@@ -72,10 +72,6 @@ db-model = "taramail.testing.unique:unique_db_model"
 db-value = "taramail.testing.unique:unique_db_value"
 domain = "taramail.testing.unique:unique_domain"
 ip = "taramail.testing.unique:unique_ip"
-
-[project.entry-points."taramail_queue"]
-memory = "taramail.queue:MemoryQueue"
-redis = "taramail.queue:RedisQueue"
 
 [project.entry-points."taramail_store"]
 memcached = "taramail.store:MemcachedStore"
